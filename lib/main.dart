@@ -11,13 +11,18 @@ import 'package:one/presentation/screens/adminDashboard.dart';
 import 'package:one/presentation/screens/loginPage.dart';
 import 'package:one/presentation/screens/signup.dart';
 import 'package:one/presentation/screens/userDashboard.dart';
+import '../../Infrastructure/repositories/adminDashboard_repository_impl.dart';
+import '/presentation/Events/adminDashboard_event.dart';
+import '/presentation/State/adminDashboard_state.dart';
+import '../../application/bloc/adminDashboard_bloc.dart';
 
 
 void main(){
 
   runApp(
       MultiBlocProvider(providers: [
-        BlocProvider(create: (context) => AuthBloc(signInDataProvider: SignInDataProvider(UserRepositoryImpl(apiService: AuthApiService()) )))
+        BlocProvider(create: (context) => AuthBloc(signInDataProvider: SignInDataProvider(UserRepositoryImpl(apiService: AuthApiService()) ))),
+        BlocProvider<AdminDashboardBloc>(create: (context) => AdminDashboardBloc(adminDashboardRepository: AdminDashboardRepositoryImpl())),
       ], child: MyApp(),)
       
   );

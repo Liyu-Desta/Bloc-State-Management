@@ -1,7 +1,6 @@
 // lib/infrastructure/auth_api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthApiService {
   final String baseUrl = 'http://localhost:3000/auth';

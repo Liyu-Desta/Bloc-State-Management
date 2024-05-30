@@ -5,15 +5,14 @@ class UserModel {
   final String userId;
   final String role;
 
-  UserModel({required this.email, required this.userId,required this.role});
+  UserModel({required this.email, required this.userId, required this.role});
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     print(json);
     return UserModel(
       role: json['roles'][0],
-       userId: json['userId'],
+      userId: json['userId'],
       email: json['email'],
-     
     );
   }
 

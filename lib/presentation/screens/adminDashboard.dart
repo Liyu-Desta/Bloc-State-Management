@@ -1,14 +1,19 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import '/presentation/screens/Profile.dart'; // Import your Profile file
+import 'package:provider/provider.dart';
+import '../../domain/models/opportunities.dart';
+import '../../Infrastructure/repositories/adminDashboard_repository_impl.dart';
+import '/presentation/Events/adminDashboard_event.dart';
+import '/presentation/State/adminDashboard_state.dart';
+import '/presentation/screens/Profile.dart';
 import 'userList.dart';
 import '/presentation/screens/LoginPage.dart';
-import '/presentation/widgets/HamburgerMenu.dart'; 
+import '/presentation/widgets/HamburgerMenu.dart';
 import '../widgets/logout_dialog.dart';
 import 'package:intl/intl.dart';
-
+import '../../application/bloc/adminDashboard_bloc.dart';
 
 // void main() {
 //   runApp(MaterialApp(
@@ -41,11 +46,13 @@ class _DashboardState extends State<Dashboard> {
   DateTime? _date1;
   DateTime? _date2;
   Uint8List? _selectedImage;
-  List<Opportunity> opportunities = [];
 
   @override
   void initState() {
     super.initState();
+    var adminDashboardBloc = BlocProvider.of<AdminDashboardBloc>(context);
+   
+    adminDashboardBloc.add(FetchOpportunities());
     _titleController = TextEditingController();
     _descriptionController = TextEditingController();
     _locationController = TextEditingController();
@@ -162,6 +169,7 @@ class _DashboardState extends State<Dashboard> {
                     return;
                   }
                   final newOpportunity = Opportunity(
+                    id: "",
                     title: _titleController.text,
                     description: _descriptionController.text,
                     location: _locationController.text,
@@ -169,9 +177,8 @@ class _DashboardState extends State<Dashboard> {
                     date2: _date2,
                     image: _selectedImage,
                   );
-                  setState(() {
-                    opportunities.add(newOpportunity);
-                  });
+                  var bloc = BlocProvider.of<AdminDashboardBloc>(context);
+                  bloc.add(AddOpportunity(opportunity: newOpportunity));
                   Navigator.of(context).pop();
                 },
                 child: Text('Save'),
@@ -210,14 +217,13 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  void _editOpportunity(int index) {
-    Opportunity selectedOpportunity = opportunities[index];
+  void _editOpportunity(Opportunity selectedOpportunity) {
     _titleController.text = selectedOpportunity.title;
     _descriptionController.text = selectedOpportunity.description;
     _locationController.text = selectedOpportunity.location;
     _date1 = selectedOpportunity.date1;
     _date2 = selectedOpportunity.date2;
-    _selectedImage = selectedOpportunity.image;
+    _selectedImage = Uint8List.fromList(selectedOpportunity.image!);
 
     showDialog(
       context: context,
@@ -309,6 +315,7 @@ class _DashboardState extends State<Dashboard> {
                   return;
                 }
                 final updatedOpportunity = Opportunity(
+                  id: selectedOpportunity.id,
                   title: _titleController.text,
                   description: _descriptionController.text,
                   location: _locationController.text,
@@ -316,9 +323,12 @@ class _DashboardState extends State<Dashboard> {
                   date2: _date2,
                   image: _selectedImage,
                 );
-                setState(() {
-                  opportunities[index] = updatedOpportunity;
-                });
+              
+              
+                var bloc = BlocProvider.of<AdminDashboardBloc>(context);
+                bloc.add(UpdateOpportunity(
+                    id: selectedOpportunity.id,
+                    updatedOpportunity: updatedOpportunity));
                 Navigator.of(context).pop();
               },
               child: Text('Update'),
@@ -329,7 +339,7 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  void _deleteOpportunity(int index) {
+  void _deleteOpportunity(Opportunity selectedOpportunity) {
     showDialog(
       context: context,
       builder: (context) {
@@ -345,9 +355,8 @@ class _DashboardState extends State<Dashboard> {
             ),
             ElevatedButton(
               onPressed: () {
-                setState(() {
-                  opportunities.removeAt(index);
-                });
+                var bloc = BlocProvider.of<AdminDashboardBloc>(context);
+                bloc.add(DeleteOpportunity(id: selectedOpportunity.id));
                 Navigator.of(context).pop();
               },
               child: Text('Delete'),
@@ -369,31 +378,27 @@ class _DashboardState extends State<Dashboard> {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
-             
-              GoRouter.of(context).pushReplacement('/login');
+              Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
       ),
-     
       drawer: HamburgerMenu(
-         onUserListTap: () { // Add navigation for User List
+        onUserListTap: () {
+          // Add navigation for User List
           Navigator.pushNamed(context, '/userList');
         },
-  onDashboardTap: () {
-    // Define the action when the dashboard item is tapped
-    Navigator.pop(context); // Close the drawer if needed
-    Navigator.pushNamed(context, '/dashboard');
-  },
-  onProfileTap: () {
-    // Define the action when the profile item is tapped
-    Navigator.pop(context); // Close the drawer if needed
-    Navigator.pushNamed(context, '/profile');
-  },
-
-),
-
-
+        onDashboardTap: () {
+          // Define the action when the dashboard item is tapped
+          Navigator.pop(context); 
+          Navigator.pushNamed(context, '/dashboard');
+        },
+        onProfileTap: () {
+          // Define the action when the profile item is tapped
+          Navigator.pop(context); 
+          Navigator.pushNamed(context, '/profile');
+        },
+      ),
       body: Column(
         children: [
           Padding(
@@ -403,40 +408,72 @@ class _DashboardState extends State<Dashboard> {
               child: Text('Add Opportunity'),
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: opportunities.length,
-              itemBuilder: (context, index) {
-                return Dismissible(
-                  key: Key(opportunities[index].title),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: EdgeInsets.only(right: 20.0),
-                    color: Colors.red,
-                    child: Icon(Icons.delete, color: Colors.white),
-                  ),
-                  onDismissed: (direction) {
-                    _deleteOpportunity(index);
-                  },
-                  child: GestureDetector(
-                    onTap: () {
-                      _editOpportunity(index);
+          BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
+              builder: (context, state) {
+            if (state is AdminDashboardFailure) {
+              return Center(
+                child: Text(
+                  'Failed to load data. Please try again.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
+            } else if (state is AdminDashboardLoading) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            } else if (state is AdminDashboardSuccess) {
+              var opportunities = state.opportunities;
+              return Expanded(
+                child: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
+                    builder: (context, state) {
+                  if (state is! AdminDashboardSuccess) {
+                    return const Center(
+                      child: Text("Something went wrong"),
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: state.opportunities.length,
+                    itemBuilder: (context, index) {
+                      return Dismissible(
+                        key: Key(state.opportunities[index].title),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: EdgeInsets.only(right: 20.0),
+                          color: Colors.red,
+                          child: Icon(Icons.delete, color: Colors.white),
+                        ),
+                        onDismissed: (direction) {
+                           _deleteOpportunity(state.opportunities[index]);
+                        },
+                        child: GestureDetector(
+                          onTap: () {
+                            _editOpportunity(state.opportunities[index]);
+                          },
+                          child: OpportunityCard(
+                            opportunity: opportunities[index],
+                            onEdit: () {
+                              _editOpportunity(state.opportunities[index]);
+                            },
+                            onDelete: () {
+                              _deleteOpportunity(state.opportunities[index]);
+                            },
+                          ),
+                        ),
+                      );
                     },
-                    child: OpportunityCard(
-                      opportunity: opportunities[index],
-                      onEdit: () {
-                        _editOpportunity(index);
-                      },
-                      onDelete: () {
-                        _deleteOpportunity(index);
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+                  );
+                }),
+              );
+            } else {
+              return Center(
+                child: Text(
+                  'Response timeOut.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
+            }
+          }),
         ],
       ),
     );
@@ -458,7 +495,7 @@ class OpportunityCard extends StatelessWidget {
       child: ListTile(
         leading: opportunity.image != null
             ? Image.memory(
-                opportunity.image!,
+                Uint8List.fromList(opportunity.image!),
                 width: 80,
                 fit: BoxFit.cover,
               )
@@ -502,22 +539,4 @@ class OpportunityCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class Opportunity {
-  final String title;
-  final String description;
-  final String location;
-  final DateTime date1;
-  final DateTime? date2;
-  final Uint8List? image;
-
-  Opportunity({
-    required this.title,
-    required this.description,
-    required this.location,
-    required this.date1,
-    this.date2,
-    this.image,
-  });
 }
