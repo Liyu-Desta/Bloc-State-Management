@@ -57,4 +57,6 @@ class AuthApiService {
       return null;
     }
   }
+
+  getToken() {}
 }

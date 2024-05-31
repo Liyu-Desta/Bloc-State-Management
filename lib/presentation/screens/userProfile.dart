@@ -1,17 +1,24 @@
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import '../widgets/custom_app_bar.dart'; // Adjust the import path
-import '../widgets/custom_button.dart'; // Adjust the import path
+import 'package:one/Application/bloc/user_profile_bloc.dart';
+import 'package:one/Domain/models/userProfile_model.dart';
 
-// Import reusable widgets
+
+import 'package:one/presentation/Events/user_profile_event.dart';
+import 'package:one/presentation/State/user_profile_state.dart';
+import '../widgets/custom_app_bar.dart'; 
+import '../widgets/custom_button.dart'; 
+ 
 
 void main() {
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: UserProfilePage(),
+    home: BlocProvider(
+      create: (context) => UserProfileBloc(),
+      child: UserProfilePage(),
+    ),
   ));
 }
 
@@ -21,61 +28,60 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  String _userName = 'Michael';
-  String _email = 'miketherunner@gmail.com';
-  String _phoneNumber = '123-456-7890';
-  String _bio = '';
-  String _location = '';
-  String _interests = '';
-  String _socialMedia = '';
-  Uint8List? _profileImageData; // Storing image bytes directly
-  final ScrollController _scrollController = ScrollController();
-  bool _showSaveButton = false;
+  late UserProfileBloc _userProfileBloc;
+  late UserProfile _userProfile; // Store user profile locally
 
   @override
   void initState() {
     super.initState();
-    // Set initial profile image when the page loads
-    _loadInitialImage();
-    _scrollController.addListener(_scrollListener);
+    _userProfileBloc = BlocProvider.of<UserProfileBloc>(context);
+    _userProfile = UserProfile(
+      userName: 'Michael',
+      email: 'miketherunner@gmail.com',
+      phoneNumber: '123-456-7890',
+      bio: '',
+      location: '',
+      interests: '',
+      socialMedia: '',
+    );
+    _userProfileBloc.add(FetchUserProfile()); // Trigger fetch profile on init
   }
 
-  void _loadInitialImage() async {
-    // Simulate loading the initial image bytes (replace this with your actual logic)
-    final initialImageBytes =
-        await _loadImageBytesFromPath('images/default_profile.jpg');
-    setState(() {
-      _profileImageData = initialImageBytes;
-    });
+  @override
+  void dispose() {
+    _userProfileBloc.close();
+    super.dispose();
   }
 
-  Future<Uint8List> _loadImageBytesFromPath(String path) async {
-    final file = File(path);
-    return await file.readAsBytes();
+  void _updateProfilePicture(Uint8List profileImageBytes) {
+    _userProfileBloc.add(UpdateProfilePicture(profileImageBytes));
   }
 
-  void _updateProfilePicture() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-      setState(() {
-        _profileImageData = bytes;
-      });
-    }
-  }
-
-  void _scrollListener() {
-    if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent) {
-      setState(() {
-        _showSaveButton = true;
-      });
-    } else {
-      setState(() {
-        _showSaveButton = false;
-      });
+  void _updateField(String fieldName, String value) {
+    switch (fieldName) {
+      case 'userName':
+        _userProfileBloc.add(UpdateUserName(value));
+        break;
+      case 'email':
+        _userProfileBloc.add(UpdateEmail(value));
+        break;
+      case 'phoneNumber':
+        _userProfileBloc.add(UpdatePhoneNumber(value));
+        break;
+      case 'bio':
+        _userProfileBloc.add(UpdateBio(value));
+        break;
+      case 'location':
+        _userProfileBloc.add(UpdateLocation(value));
+        break;
+      case 'interests':
+        _userProfileBloc.add(UpdateInterests(value));
+        break;
+      case 'socialMedia':
+        _userProfileBloc.add(UpdateSocialMedia(value));
+        break;
+      default:
+        break;
     }
   }
 
@@ -85,158 +91,129 @@ class _UserProfilePageState extends State<UserProfilePage> {
       appBar: CustomAppBar(
         title: 'My Profile',
       ),
-      body: CustomScrollView(
-        controller:
-            _scrollController, // Attach scroll controller to CustomScrollView
-        slivers: [
-          SliverPadding(
-            padding: EdgeInsets.only(
-                bottom: 10), // Add bottom padding to the app bar
-            sliver: SliverPadding(
-              padding: EdgeInsets.all(40),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    GestureDetector(
-                      onTap: _updateProfilePicture,
-                      child: Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: _profileImageData != null
-                            ? CircleAvatar(
-                                backgroundImage:
-                                    MemoryImage(_profileImageData!),
-                                radius: 60,
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              ),
-                      ),
-                    ),
-
-                    SizedBox(height: 20),
-                    _buildProfileField(
-                      labelText: 'User Name',
-                      initialValue: _userName,
-                      onChanged: (value) {
-                        setState(() {
-                          _userName = value;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 16.0),
-                    _buildProfileField(
-                      labelText: 'Email',
-                      initialValue: _email,
-                      onChanged: (value) {
-                        setState(() {
-                          _email = value;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 16.0),
-                    _buildProfileField(
-                      labelText: 'Phone Number',
-                      initialValue: _phoneNumber,
-                      onChanged: (value) {
-                        setState(() {
-                          _phoneNumber = value;
-                        });
-                      },
-                    ),
-                    SizedBox(height: 20),
-                    // Divider between profile fields and additional features
-                    Divider(color: Colors.grey),
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.person,
-                      title: 'Bio',
-                      subtitle: 'Add a short description about yourself',
-                      inputValue: _bio,
-                      onTap: (value) {
-                        _showInputDialog(_bio, (value) {
-                          setState(() {
-                            _bio = value;
-                          });
-                        });
-                      },
-                    ),
-
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.location_on,
-                      title: 'Location',
-                      subtitle: 'Add or update your current location',
-                      inputValue: _location,
-                      onTap: (value) {
-                        _showInputDialog(_location, (value) {
-                          setState(() {
-                            _location = value;
-                          });
-                        });
-                      },
-                    ),
-
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.tag,
-                      title: 'Interests',
-                      subtitle: 'Add or update your interests or hobbies',
-                      inputValue: _interests,
-                      onTap: (value) {
-                        _showInputDialog(_interests, (value) {
-                          setState(() {
-                            _interests = value;
-                          });
-                        });
-                      },
-                    ),
-
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.link,
-                      title: 'Social Media',
-                      subtitle: 'Connect your social media profiles',
-                      inputValue: _socialMedia,
-                      onTap: (value) {
-                        _showInputDialog(_socialMedia, (value) {
-                          setState(() {
-                            _socialMedia = value;
-                          });
-                        });
-                      },
-                    ),
-
-                    SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+      body: BlocBuilder<UserProfileBloc, UserProfileState>(
+        builder: (context, state) {
+          if (state is UserProfileLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is UserProfileLoaded) {
+            _userProfile = state.userProfile; // Update local profile state
+            return _buildProfileContent();
+          } else if (state is UserProfileError) {
+            return Center(child: Text('Failed to load profile: ${state.errorMessage}'));
+          } else {
+            return Center(child: Text('Unknown state occurred.'));
+          }
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Visibility(
-        visible: _showSaveButton,
-        child: CustomButton(
-          text: 'Save',
-          onPressed: () {
-            // Placeholder action for saving data
-            print('User Information Saved');
-          },
-        ),
+      floatingActionButton: CustomButton(
+        text: 'Save',
+        onPressed: () {
+          _saveUserProfile();
+        },
       ),
     );
   }
 
+  Widget _buildProfileContent() {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.all(40),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate(
+              [
+                GestureDetector(
+                  onTap: _updateProfilePicture,
+                  child: Container(
+                    height: 120,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      shape: BoxShape.circle,
+                    ),
+                    child: _userProfile.profileImageBytes != null
+                        ? CircleAvatar(
+                            backgroundImage:
+                                MemoryImage(_userProfile.profileImageBytes!),
+                            radius: 60,
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          ),
+                  ),
+                ),
+
+                SizedBox(height: 20),
+                _buildProfileField(
+                  fieldName: 'userName',
+                  labelText: 'User Name',
+                  initialValue: _userProfile.userName,
+                ),
+                SizedBox(height: 16.0),
+                _buildProfileField(
+                  fieldName: 'email',
+                  labelText: 'Email',
+                  initialValue: _userProfile.email,
+                ),
+                SizedBox(height: 16.0),
+                _buildProfileField(
+                  fieldName: 'phoneNumber',
+                  labelText: 'Phone Number',
+                  initialValue: _userProfile.phoneNumber,
+                ),
+                SizedBox(height: 20),
+                // Divider between profile fields and additional features
+                Divider(color: Colors.grey),
+                _buildAdditionalProfileFeature(
+                  icon: Icons.person,
+                  title: 'Bio',
+                  subtitle: 'Add a short description about yourself',
+                  inputValue: _userProfile.bio,
+                  fieldName: 'bio',
+                ),
+
+                _buildAdditionalProfileFeature(
+                  icon: Icons.location_on,
+                  title: 'Location',
+                  subtitle: 'Add or update your current location',
+                  inputValue: _userProfile.location,
+                  fieldName: 'location',
+                ),
+
+                _buildAdditionalProfileFeature(
+                  icon: Icons.tag,
+                  title: 'Interests',
+                  subtitle: 'Add or update your interests or hobbies',
+                  inputValue: _userProfile.interests,
+                  fieldName: 'interests',
+                ),
+
+                _buildAdditionalProfileFeature(
+                  icon: Icons.link,
+                  title: 'Social Media',
+                  subtitle: 'Connect your social media profiles',
+                  inputValue: _userProfile.socialMedia,
+                  fieldName: 'socialMedia',
+                ),
+
+                SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildProfileField({
+    required String fieldName,
     required String labelText,
     required String initialValue,
-    required ValueChanged<String> onChanged,
   }) {
     return TextFormField(
       initialValue: initialValue,
@@ -251,7 +228,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           fontFamily: 'Roboto',
         ),
       ),
-      onChanged: onChanged,
+      onChanged: (value) => _updateField(fieldName, value),
     );
   }
 
@@ -260,7 +237,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     required String title,
     required String subtitle,
     required String inputValue,
-    required ValueChanged<String> onTap,
+    required String fieldName,
   }) {
     return Column(
       children: [
@@ -282,7 +259,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ),
           ),
           onTap: () {
-            onTap(inputValue); // Pass inputValue to onTap callback
+            _showInputDialog(inputValue, (value) {
+              _updateField(fieldName, value); // Update field value
+            });
           },
         ),
         if (inputValue.isNotEmpty) // Only show input value if not empty
@@ -335,5 +314,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
         );
       },
     );
+  }
+
+  void _saveUserProfile() {
+    _userProfileBloc.add(SaveUserProfile(_userProfile));
   }
 }
