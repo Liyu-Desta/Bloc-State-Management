@@ -15,6 +15,8 @@ import { HasRoles } from '../auth/has-roles.decorator';
 import { Role } from '../model/role.enum';
 import { UsersService } from './users.service';
 import { User } from './users.model';
+const mongoose = require('mongoose');
+
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -28,10 +30,11 @@ export class UsersController {
     return this.usersService.getAllUsers();
   }
 
-  @Get(':id')
+  @Get('one')
   @UseGuards(JwtAuthGuard)
-  async getUser(@Param('id') id: string) {
-    return this.usersService.getUser(id);
+  async getUser(@Req() req)  {
+    const userId = req.user.userId;
+  return this.usersService.getUser(userId);
   }
 
   @Post()
@@ -41,13 +44,12 @@ export class UsersController {
   }
 
   @Put(':id')
-  @HasRoles(Role.Admin)
+
   async updateUser(@Param('id') id: string, @Body() userData) {
     return this.usersService.updateUser(id, userData);
   }
 
   @Delete(':id')
-  @HasRoles(Role.Admin)
   async deleteUser(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
   }

@@ -1,26 +1,16 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:one/Application/bloc/user_profile_bloc.dart';
-import 'package:one/Domain/models/userProfile_model.dart';
+import 'package:one/presentation/State/profile_state.dart';
+import 'package:one/presentation/screens/GetStarted.dart';
+import 'package:one/presentation/screens/loginPage.dart';
 
-
-import 'package:one/presentation/Events/user_profile_event.dart';
-import 'package:one/presentation/State/user_profile_state.dart';
-import '../widgets/custom_app_bar.dart'; 
-import '../widgets/custom_button.dart'; 
- 
-
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: BlocProvider(
-      create: (context) => UserProfileBloc(),
-      child: UserProfilePage(),
-    ),
-  ));
-}
+import '../../Application/bloc/profile_bloc.dart';
+import '../../Domain/models/profile.dart';
+import '../Events/profile_event.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_alert_dialog.dart';
+ // Import your login screen here
 
 class UserProfilePage extends StatefulWidget {
   @override
@@ -28,287 +18,126 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  late UserProfileBloc _userProfileBloc;
-  late UserProfile _userProfile; // Store user profile locally
+  late ProfileBloc _profileBloc;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _phoneNumberController;
 
   @override
   void initState() {
     super.initState();
-    _userProfileBloc = BlocProvider.of<UserProfileBloc>(context);
-    _userProfile = UserProfile(
-      userName: 'Michael',
-      email: 'miketherunner@gmail.com',
-      phoneNumber: '123-456-7890',
-      bio: '',
-      location: '',
-      interests: '',
-      socialMedia: '',
-    );
-    _userProfileBloc.add(FetchUserProfile()); // Trigger fetch profile on init
+    _profileBloc = BlocProvider.of<ProfileBloc>(context);
+    _profileBloc.add(FetchProfile()); // Fetch the profile data on page load
+
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _phoneNumberController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _userProfileBloc.close();
+    _profileBloc.close();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneNumberController.dispose();
     super.dispose();
-  }
-
-  void _updateProfilePicture(Uint8List profileImageBytes) {
-    _userProfileBloc.add(UpdateProfilePicture(profileImageBytes));
-  }
-
-  void _updateField(String fieldName, String value) {
-    switch (fieldName) {
-      case 'userName':
-        _userProfileBloc.add(UpdateUserName(value));
-        break;
-      case 'email':
-        _userProfileBloc.add(UpdateEmail(value));
-        break;
-      case 'phoneNumber':
-        _userProfileBloc.add(UpdatePhoneNumber(value));
-        break;
-      case 'bio':
-        _userProfileBloc.add(UpdateBio(value));
-        break;
-      case 'location':
-        _userProfileBloc.add(UpdateLocation(value));
-        break;
-      case 'interests':
-        _userProfileBloc.add(UpdateInterests(value));
-        break;
-      case 'socialMedia':
-        _userProfileBloc.add(UpdateSocialMedia(value));
-        break;
-      default:
-        break;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'My Profile',
-      ),
-      body: BlocBuilder<UserProfileBloc, UserProfileState>(
+      appBar: CustomAppBar(title: 'My Profile'),
+      body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
-          if (state is UserProfileLoading) {
+          if (state is ProfileLoading) {
             return Center(child: CircularProgressIndicator());
-          } else if (state is UserProfileLoaded) {
-            _userProfile = state.userProfile; // Update local profile state
-            return _buildProfileContent();
-          } else if (state is UserProfileError) {
-            return Center(child: Text('Failed to load profile: ${state.errorMessage}'));
+          } else if (state is ProfileSuccess) {
+            final List<Profile> profiles = state.profile; // Assuming it returns List<Profile>
+            if (profiles.isEmpty) {
+              return Center(child: Text('No profile data available'));
+            } else {
+              // Display the first profile in the list (assuming there's only one)
+              final Profile profile = profiles.first;
+
+              // Update text controllers with profile data
+              _emailController.text = profile.email;
+              _passwordController.text = profile.password;
+              _phoneNumberController.text = profile.phoneNumber;
+
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: AssetImage('assets/images/logo.png'),
+                    ),
+                    SizedBox(height: 20),
+                    _buildEditableProfileField('Email', _emailController),
+                    SizedBox(height: 16.0),
+                    _buildEditableProfileField('Password', _passwordController, obscureText: true),
+                    SizedBox(height: 16.0),
+                    _buildEditableProfileField('Phone Number', _phoneNumberController),
+                    SizedBox(height: 20),
+                    CustomButton(
+                      text: 'Save',
+                      onPressed: () {
+                        _showConfirmationDialog(profile.id);
+                      },
+                    ),
+                    SizedBox(height: 8.0),
+                    CustomButton(
+                      text: 'Delete Account',
+                      onPressed: () {
+                        _showDeleteConfirmationDialog(profile.id);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else if (state is ProfileFailure) {
+            return Center(child: Text('Failed to load profile: ${state.error}'));
           } else {
-            return Center(child: Text('Unknown state occurred.'));
+            return Center(child: Text('Unknown state'));
           }
         },
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: CustomButton(
-        text: 'Save',
-        onPressed: () {
-          _saveUserProfile();
-        },
-      ),
     );
   }
 
-  Widget _buildProfileContent() {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: EdgeInsets.all(40),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                GestureDetector(
-                  onTap: _updateProfilePicture,
-                  child: Container(
-                    height: 120,
-                    width: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      shape: BoxShape.circle,
-                    ),
-                    child: _userProfile.profileImageBytes != null
-                        ? CircleAvatar(
-                            backgroundImage:
-                                MemoryImage(_userProfile.profileImageBytes!),
-                            radius: 60,
-                          )
-                        : Center(
-                            child: Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-                _buildProfileField(
-                  fieldName: 'userName',
-                  labelText: 'User Name',
-                  initialValue: _userProfile.userName,
-                ),
-                SizedBox(height: 16.0),
-                _buildProfileField(
-                  fieldName: 'email',
-                  labelText: 'Email',
-                  initialValue: _userProfile.email,
-                ),
-                SizedBox(height: 16.0),
-                _buildProfileField(
-                  fieldName: 'phoneNumber',
-                  labelText: 'Phone Number',
-                  initialValue: _userProfile.phoneNumber,
-                ),
-                SizedBox(height: 20),
-                // Divider between profile fields and additional features
-                Divider(color: Colors.grey),
-                _buildAdditionalProfileFeature(
-                  icon: Icons.person,
-                  title: 'Bio',
-                  subtitle: 'Add a short description about yourself',
-                  inputValue: _userProfile.bio,
-                  fieldName: 'bio',
-                ),
-
-                _buildAdditionalProfileFeature(
-                  icon: Icons.location_on,
-                  title: 'Location',
-                  subtitle: 'Add or update your current location',
-                  inputValue: _userProfile.location,
-                  fieldName: 'location',
-                ),
-
-                _buildAdditionalProfileFeature(
-                  icon: Icons.tag,
-                  title: 'Interests',
-                  subtitle: 'Add or update your interests or hobbies',
-                  inputValue: _userProfile.interests,
-                  fieldName: 'interests',
-                ),
-
-                _buildAdditionalProfileFeature(
-                  icon: Icons.link,
-                  title: 'Social Media',
-                  subtitle: 'Connect your social media profiles',
-                  inputValue: _userProfile.socialMedia,
-                  fieldName: 'socialMedia',
-                ),
-
-                SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileField({
-    required String fieldName,
-    required String labelText,
-    required String initialValue,
-  }) {
+  Widget _buildEditableProfileField(String label, TextEditingController controller, {bool obscureText = false}) {
     return TextFormField(
-      initialValue: initialValue,
+      controller: controller,
+      obscureText: obscureText,
       decoration: InputDecoration(
-        labelText: labelText,
+        labelText: label,
         border: OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.grey[200],
-        suffixIcon: Icon(Icons.edit, color: Colors.purple),
-        labelStyle: TextStyle(
-          color: Colors.purple,
-          fontFamily: 'Roboto',
-        ),
       ),
-      onChanged: (value) => _updateField(fieldName, value),
     );
   }
 
-  Widget _buildAdditionalProfileFeature({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String inputValue,
-    required String fieldName,
-  }) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: Colors.purple),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: Colors.purple,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Roboto',
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.grey, // Set subtitle color to grey
-              fontFamily: 'Roboto',
-            ),
-          ),
-          onTap: () {
-            _showInputDialog(inputValue, (value) {
-              _updateField(fieldName, value); // Update field value
-            });
-          },
-        ),
-        if (inputValue.isNotEmpty) // Only show input value if not empty
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.centerLeft,
-            child: Text(
-              inputValue,
-              style: TextStyle(
-                color: Colors.black, // Set input value color to black
-                fontFamily: 'Roboto',
-              ),
-            ),
-          ),
-        Divider(color: Colors.grey),
-      ],
-    );
-  }
-
-  void _showInputDialog(String initialValue, Function(String) onSave) {
-    String inputValue = initialValue;
-
+  void _showConfirmationDialog(String profileId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Enter'),
-          content: TextFormField(
-            initialValue: initialValue, // Set initial value for editing
-            onChanged: (value) => inputValue = value,
-            decoration: InputDecoration(
-              hintText: 'Enter',
-            ),
-          ),
+        return CustomAlertDialog(
+          title: 'Confirm Changes',
+          content: Text('Are you sure you want to save changes?'),
           actions: [
-            ElevatedButton(
+            TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
+                Navigator.of(context).pop();
               },
               child: Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                onSave(inputValue); // Save input value
-                Navigator.pop(context); // Close dialog
+                _updateProfile(profileId);
+                Navigator.of(context).pop();
               },
-              child: Text('Ok'),
+              child: Text('Save'),
             ),
           ],
         );
@@ -316,7 +145,61 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  void _saveUserProfile() {
-    _userProfileBloc.add(SaveUserProfile(_userProfile));
+  void _updateProfile(String profileId) {
+    final updatedProfile = Profile(
+      id: profileId,
+      email: _emailController.text,
+      password: _passwordController.text,
+      phoneNumber: _phoneNumberController.text,
+    );
+    _profileBloc.add(UpdateProfile(id: profileId, updatedProfile: updatedProfile));
   }
+
+  void _showDeleteConfirmationDialog(String profileId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return CustomAlertDialog(
+        title: 'Confirm Delete Account',
+        content: Text('Are you sure you want to delete your account? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _deleteProfile(profileId, () {
+                Navigator.of(context).pop(); // Close delete confirmation dialog
+                Navigator.pushReplacement( // Navigate to LoginScreen
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                );
+              });
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
+
+ void _deleteProfile(String profileId, VoidCallback callback) {
+  _profileBloc.add(DeleteProfile(id: profileId));
+
+  // Close any dialogs or modals before navigating away
+  Navigator.of(context).pop();
+
+  // Call the callback to navigate to LoginScreen after deletion
+  callback();
+}
+
+
+
+
 }
