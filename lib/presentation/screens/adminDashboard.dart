@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../../domain/models/opportunities.dart';
+import '../../Domain/models/opportunities.dart';
 import '../../Infrastructure/repositories/adminDashboard_repository_impl.dart';
 import '/presentation/Events/adminDashboard_event.dart';
 import '/presentation/State/adminDashboard_state.dart';
 import '/presentation/screens/Profile.dart';
 import 'userList.dart';
-import '/presentation/screens/LoginPage.dart';
+import '/presentation/screens/loginPage.dart';
 import '/presentation/widgets/HamburgerMenu.dart';
 import '../widgets/logout_dialog.dart';
 import 'package:intl/intl.dart';
-import '../../application/bloc/adminDashboard_bloc.dart';
+import '../../Application/bloc/adminDashboard_bloc.dart';
 
 // void main() {
 //   runApp(MaterialApp(

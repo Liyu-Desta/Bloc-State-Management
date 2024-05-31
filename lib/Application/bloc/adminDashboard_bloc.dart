@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../presentation/Events/adminDashboard_event.dart';
 import '../../presentation/State/adminDashboard_state.dart';
-import '../../domain/repositories/adminDashboard_repository.dart';
+import '../../Domain/Repositories/adminDashboard_repository.dart';
 
 class AdminDashboardBloc
     extends Bloc<AdminDashboardEvent, AdminDashboardState> {

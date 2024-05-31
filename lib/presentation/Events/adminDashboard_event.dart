@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/models/opportunities.dart';
+import '../../Domain/models/opportunities.dart';
 
 abstract class AdminDashboardEvent extends Equatable {
   const AdminDashboardEvent();

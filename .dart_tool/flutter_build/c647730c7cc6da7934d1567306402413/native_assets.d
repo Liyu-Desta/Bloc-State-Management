@@ -1,0 +1,1 @@
+ /home/user/Desktop/Mobile\ river\ git/blockgit/Bloc-State-Management/.dart_tool/flutter_build/c647730c7cc6da7934d1567306402413/native_assets.yaml: 

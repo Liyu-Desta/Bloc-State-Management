@@ -14,7 +14,7 @@ import 'package:one/presentation/screens/userDashboard.dart';
 import '../../Infrastructure/repositories/adminDashboard_repository_impl.dart';
 import '/presentation/Events/adminDashboard_event.dart';
 import '/presentation/State/adminDashboard_state.dart';
-import '../../application/bloc/adminDashboard_bloc.dart';
+import '../../Application/bloc/adminDashboard_bloc.dart';
 
 
 void main(){

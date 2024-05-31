@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:one/Infrastructure/auth_api_service.dart';
 import 'package:one/Infrastructure/user_repository_impl.dart';
 import 'dart:convert';
-import '../../domain/models/opportunities.dart';
+import '../../Domain/models/opportunities.dart';
 
 class AdminDashboardApi {
   static const String baseUrl = 'http://localhost:3000';

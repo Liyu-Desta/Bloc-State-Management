@@ -1,9 +1,9 @@
-import '../../domain/models/opportunities.dart';
-import '../../domain/repositories/adminDashboard_repository.dart';
-import '../../infrastructure/data_providers/adminDashboard_api.dart';
-import '../../domain/models/opportunities.dart';
-import '../../domain/repositories/adminDashboard_repository.dart';
-import '../../infrastructure/data_providers/adminDashboard_api.dart';
+import '../../Domain/models/opportunities.dart';
+import '../../Domain/Repositories/adminDashboard_repository.dart';
+import '../../Infrastructure/data_providers/adminDashboard_api.dart';
+import '../../Domain/models/opportunities.dart';
+import '../../Domain/Repositories/adminDashboard_repository.dart';
+import '../../Infrastructure/data_providers/adminDashboard_api.dart';
 
 class AdminDashboardRepositoryImpl implements AdminDashboardRepository {
   @override

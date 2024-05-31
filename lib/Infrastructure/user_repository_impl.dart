@@ -2,7 +2,7 @@
 import 'package:one/Domain/entities/user.dart';
 import 'package:one/Domain/models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../domain/repositories/user_repository.dart';
+import '../Domain/Repositories/user_repository.dart';
 import 'auth_api_service.dart';
 
 class UserRepositoryImpl implements UserRepository {

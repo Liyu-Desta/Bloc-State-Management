@@ -1,4 +1,4 @@
-import '../../domain/models/opportunities.dart';
+import '../../Domain/models/opportunities.dart';
 
 abstract class AdminDashboardRepository {
   Future<void> addOpportunity(Opportunity opportunity);
