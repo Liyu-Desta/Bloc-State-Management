@@ -1,18 +1,14 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import '../widgets/custom_app_bar.dart'; // Adjust the import path
-import '../widgets/custom_button.dart'; // Adjust the import path
-import '../widgets/custom_alert_dialog.dart'; // Adjust the import path
+import 'package:one/Domain/models/adminProfile_model.dart';
+import 'package:one/Application/bloc/admin_profile_bloc.dart';
+import 'package:one/presentation/widgets/custom_alert_dialog.dart';
+import 'package:one/presentation/widgets/custom_app_bar.dart';
+import 'package:one/presentation/widgets/custom_button.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: AdminProfilePage(),
-  ));
-}
 
 class AdminProfilePage extends StatefulWidget {
   @override
@@ -20,19 +16,25 @@ class AdminProfilePage extends StatefulWidget {
 }
 
 class _AdminProfilePageState extends State<AdminProfilePage> {
-  String _adminName = 'Sebastian Goddard';
-  String _email = 'Sabastiangoddard12@gmail.com';
-  String _phoneNumber = '123-456-7890';
-  String _password = '';
+  late AdminProfileBloc _adminProfileBloc;
+
+  String _adminName = '';
+  String _email = '';
+  String _phoneNumber = '';
   Uint8List? _profileImageData;
   bool _showSaveButton = false;
 
   final ScrollController _scrollController = ScrollController();
+  
+  // Define _password variable here
+  String _password = '';
 
   @override
   void initState() {
     super.initState();
-    _loadInitialImage();
+    _adminProfileBloc = BlocProvider.of<AdminProfileBloc>(context);
+    _adminProfileBloc.add(FetchAdminProfile());
+
     _scrollController.addListener(_scrollListener);
   }
 
@@ -42,17 +44,16 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     super.dispose();
   }
 
-  void _loadInitialImage() async {
-    final initialImageBytes =
-        await _loadImageBytesFromPath('images/default_profile.jpg');
-    setState(() {
-      _profileImageData = initialImageBytes;
-    });
-  }
-
-  Future<Uint8List> _loadImageBytesFromPath(String path) async {
-    final file = File(path);
-    return await file.readAsBytes();
+  void _scrollListener() {
+    if (_scrollController.offset >= _scrollController.position.maxScrollExtent) {
+      setState(() {
+        _showSaveButton = true;
+      });
+    } else {
+      setState(() {
+        _showSaveButton = false;
+      });
+    }
   }
 
   void _updateProfilePicture() async {
@@ -64,12 +65,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       setState(() {
         _profileImageData = bytes;
       });
+
+      _adminProfileBloc.add(UpdateProfilePicture(bytes));
     }
   }
 
   void _changePassword() {
-    _password = '';
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -130,20 +131,13 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   }
 
   void _saveAdminInformation() {
-    print('Admin information saved');
-  }
-
-  void _scrollListener() {
-    if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent) {
-      setState(() {
-        _showSaveButton = true;
-      });
-    } else {
-      setState(() {
-        _showSaveButton = false;
-      });
-    }
+    final updatedProfile = AdminProfile(
+      adminName: _adminName,
+      email: _email,
+      phoneNumber: _phoneNumber,
+      profileImageBytes: _profileImageData,
+    );
+    _adminProfileBloc.add(SaveAdminProfile(updatedProfile));
   }
 
   @override
@@ -152,80 +146,90 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       appBar: CustomAppBar(
         title: 'Admin Profile',
       ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: <Widget>[
-          SliverPadding(
-            padding: EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  Center(
-                    child: GestureDetector(
-                      onTap: _updateProfilePicture,
-                      child: Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
+      body: BlocBuilder<AdminProfileBloc, AdminProfileState>(
+        builder: (context, state) {
+          if (state is AdminProfileLoaded) {
+            _adminName = state.adminProfile.adminName;
+            _email = state.adminProfile.email;
+            _phoneNumber = state.adminProfile.phoneNumber;
+            _profileImageData = state.adminProfile.profileImageBytes;
+          }
+
+          return CustomScrollView(
+            controller: _scrollController,
+            slivers: <Widget>[
+              SliverPadding(
+                padding: EdgeInsets.all(20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    [
+                      Center(
+                        child: GestureDetector(
+                          onTap: _updateProfilePicture,
+                          child: Container(
+                            height: 120,
+                            width: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              shape: BoxShape.circle,
+                            ),
+                            child: _profileImageData != null
+                                ? CircleAvatar(
+                                    backgroundImage: MemoryImage(_profileImageData!),
+                                    radius: 60,
+                                  )
+                                : Center(
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                  ),
+                          ),
                         ),
-                        child: _profileImageData != null
-                            ? CircleAvatar(
-                                backgroundImage:
-                                    MemoryImage(_profileImageData!),
-                                radius: 60,
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              ),
                       ),
-                    ),
+                      SizedBox(height: 60),
+                      _buildProfileField(
+                        labelText: 'Admin Name',
+                        initialValue: _adminName,
+                        onChanged: (value) {
+                          setState(() {
+                            _adminName = value;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 16.0),
+                      _buildProfileField(
+                        labelText: 'Email',
+                        initialValue: _email,
+                        onChanged: (value) {
+                          setState(() {
+                            _email = value;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 16.0),
+                      _buildProfileField(
+                        labelText: 'Phone Number',
+                        initialValue: _phoneNumber,
+                        onChanged: (value) {
+                          setState(() {
+                            _phoneNumber = value;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      Divider(color: Colors.grey),
+                      SizedBox(height: 10),
+                      _buildAdditionalFeatures(),
+                      SizedBox(height: 20),
+                    ],
                   ),
-                  SizedBox(height: 60),
-                  _buildProfileField(
-                    labelText: 'Admin Name',
-                    initialValue: _adminName,
-                    onChanged: (value) {
-                      setState(() {
-                        _adminName = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16.0),
-                  _buildProfileField(
-                    labelText: 'Email',
-                    initialValue: _email,
-                    onChanged: (value) {
-                      setState(() {
-                        _email = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16.0),
-                  _buildProfileField(
-                    labelText: 'Phone Number',
-                    initialValue: _phoneNumber,
-                    onChanged: (value) {
-                      setState(() {
-                        _phoneNumber = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  Divider(color: Colors.grey),
-                  SizedBox(height: 10),
-                  _buildAdditionalFeatures(),
-                  SizedBox(height: 20),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Visibility(
