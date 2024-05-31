@@ -1,3 +1,5 @@
+import 'package:one/Infrastructure/auth_api_service.dart';
+
 import '../../Domain/models/opportunities.dart';
 import '../../Domain/Repositories/adminDashboard_repository.dart';
 import '../../Infrastructure/data_providers/adminDashboard_api.dart';
@@ -6,6 +8,7 @@ import '../../Domain/Repositories/adminDashboard_repository.dart';
 import '../../Infrastructure/data_providers/adminDashboard_api.dart';
 
 class AdminDashboardRepositoryImpl implements AdminDashboardRepository {
+
   @override
   Future<void> addOpportunity(Opportunity opportunity) async {
     await AdminDashboardApi.addOpportunity(opportunity);

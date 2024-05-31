@@ -18,6 +18,8 @@ import { HasRoles } from '../auth/has-roles.decorator';
 import { Role } from '../model/role.enum';
 import { VolunteerOpportunitiesService } from './volunteer-opportunity.service';
 import { User } from '../users/users.model';
+import { VolunteerOpportunity } from './volunteer-opportunity.model';
+import { Booking } from './booking.model';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('volunteer-opportunities')
@@ -52,10 +54,12 @@ export class VolunteerOpportunitiesController {
   }
   //volunteers(users) booking
 
-  @Post(':bookingid')
+  @Post(':opportunityId')
   @UseGuards(JwtAuthGuard) // Open to all authenticated users
-  async bookOpportunity(@Req() req, @Param('id') opportunityId: string) {
-    const userId = req.user.userId; // Accessing "userId" from req.user
+  async bookOpportunity(
+    @Body('userId') userId: string, 
+    @Param('opportunityId') opportunityId: string
+  ) {
     return this.opportunitiesService.bookOpportunity(userId, opportunityId);
   }
 
@@ -79,7 +83,7 @@ export class VolunteerOpportunitiesController {
 
   @Put('bookings/:bookingId')
   
-  async updateBooking(@Param('id') id: string, @Body() bookingData) {
+  async updateBooking(@Param('bookingId') id: string, @Body() bookingData:Booking) {
     return this.opportunitiesService.updateBooking(id, bookingData);
   }
 

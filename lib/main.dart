@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one/Application/bloc/loginbloc.dart';
+import 'package:one/Application/bloc/menu_opportunity_bloc.dart';
 import 'package:one/Domain/Repositories/user_repository.dart';
 import 'package:one/Infrastructure/auth_api_service.dart';
 import 'package:one/Infrastructure/data_providers/signInDataProvider.dart';
+import 'package:one/Infrastructure/repositories/menuOpportunity_repository_impl.dart';
 import 'package:one/Infrastructure/user_repository_impl.dart';
 import 'package:one/presentation/screens/GetStarted.dart';
 import 'package:one/presentation/screens/adminDashboard.dart';
@@ -23,6 +25,9 @@ void main(){
       MultiBlocProvider(providers: [
         BlocProvider(create: (context) => AuthBloc(signInDataProvider: SignInDataProvider(UserRepositoryImpl(apiService: AuthApiService()) ))),
         BlocProvider<AdminDashboardBloc>(create: (context) => AdminDashboardBloc(adminDashboardRepository: AdminDashboardRepositoryImpl())),
+        BlocProvider<MenuOpportunityBloc>(create: (context) => MenuOpportunityBloc(menuOpportunityRepository: MenuRepositoryImpl())),
+       
+    
       ], child: MyApp(),)
       
   );

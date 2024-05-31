@@ -15,24 +15,7 @@ import '../widgets/logout_dialog.dart';
 import 'package:intl/intl.dart';
 import '../../Application/bloc/adminDashboard_bloc.dart';
 
-// void main() {
-//   runApp(MaterialApp(
-//     debugShowCheckedModeBanner: false,
-//     home: Dashboard(),
-//     routes: {
-//       '/dashboard': (context) => Dashboard(),
-//       '/profile': (context) => AdminProfilePage(),
-//       '/userList': (context) => UserList(),
-//       '/loginpage': (context) => LoginScreen(),
-//     },
-//     onGenerateRoute: (settings) {
-//       if (settings.name == '/login') {
-//         return MaterialPageRoute(builder: (context) => LoginScreen());
-//       }
-//       // Handle other routes here if needed
-//     },
-//   ));
-// }
+
 
 class Dashboard extends StatefulWidget {
   @override

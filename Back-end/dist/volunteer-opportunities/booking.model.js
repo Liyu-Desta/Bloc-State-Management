@@ -3,12 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingModel = exports.BookingSchema = void 0;
 const mongoose_1 = require("mongoose");
 exports.BookingSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
-    opportunity: {
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    opportunityId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'VolunteerOpportunity',
         required: true,
     },
+    date: { type: String },
+    selectedDate: { type: String },
     // Additional fields as necessary
 });
 // Create the model and export it

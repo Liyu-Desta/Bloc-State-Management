@@ -36,7 +36,6 @@ class AdminDashboardBloc
     emit(AdminDashboardLoading());
     try {
       final opportunities = await adminDashboardRepository.fetchOpportunities();
-      print(opportunities);
       emit(AdminDashboardSuccess(opportunities));
       return AdminDashboardSuccess(opportunities); // Explicit return here
     } catch (e) {

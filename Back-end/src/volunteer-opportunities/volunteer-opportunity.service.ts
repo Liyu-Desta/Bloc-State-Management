@@ -38,12 +38,14 @@ export class VolunteerOpportunitiesService {
   async bookOpportunity(
     userId: string,
     opportunityId: string,
+    
   ): Promise<Booking> {
     try {
       console.log(`Booking opportunity: ${opportunityId} for user: ${userId}`);
       const newBooking = new this.bookingModel({
-        user: userId,
-        opportunity: opportunityId,
+        userId: userId,
+        opportunityId: opportunityId,
+        
       });
       return await newBooking.save();
     } catch (error) {
@@ -53,12 +55,24 @@ export class VolunteerOpportunitiesService {
   }
 
   async getUserBookings(userId: string): Promise<Booking[]> {
-    return this.bookingModel
-      .find({ user: userId })
-      .populate('opportunity')
-      .exec();
+    try {
+      const bookings = await this.bookingModel
+        .find({ userId: userId })
+        .populate('opportunityId')
+        .exec();
+  
+      if (!bookings) {
+        throw new Error('No bookings found for the user.');
+      }
+  
+      return bookings;
+    } catch (error) {
+      // Handle the error here
+      console.error('Error fetching user bookings:', error);
+      throw error; // Re-throwing the error for further handling
+    }
   }
-
+  
   async unbookOpportunity(bookingId: string): Promise<any> {
     return this.bookingModel.findOneAndDelete({ _id: bookingId }).exec();
   }
@@ -69,7 +83,8 @@ export class VolunteerOpportunitiesService {
       .populate('user')
       .exec();
   }
-  async updateBooking(bookingId: string, bookingData): Promise<Booking> {
+  async updateBooking(bookingId: string, bookingData:Booking): Promise<Booking> {
+    console.log("reached here");
     return this.bookingModel
       .findByIdAndUpdate(bookingId, bookingData, { new: true })
       .exec();

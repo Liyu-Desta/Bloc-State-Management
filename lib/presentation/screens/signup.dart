@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:one/Application/bloc/loginbloc.dart';
 import 'package:one/presentation/screens/adminDashboard.dart';
 import 'package:one/presentation/screens/loginPage.dart';
+import 'package:one/presentation/screens/menu.dart';
 import 'package:one/presentation/screens/userDashboard.dart';
 
 
@@ -35,7 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
           return Dashboard();
         }
         else{
-          return UserDashboard();
+          return Menu();
         }
       }
       else {

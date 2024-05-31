@@ -1,176 +1,63 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import './userProfile.dart';
-import 'userDashboard.dart';
-import '../screens/LoginPage.dart'; // Import the new login screen widget
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:one/presentation/Events/menu_opportunity_event.dart';
+import 'package:one/presentation/State/menu_opportunity_state.dart';
+import 'package:one/Domain/models/menu_opportunity_model.dart';
+import 'package:one/Application/bloc/menu_opportunity_bloc.dart';
 
-import '../widgets/logout_dialog.dart'; // Import the new hamburger menu widget
-
-void main() => runApp(const MenuApp());
-
-class MenuApp extends StatelessWidget {
-  const MenuApp({Key? key}) : super(key: key);
+class Menu extends StatefulWidget {
+  const Menu({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      
-      home: Menu(),
-      routes: {
-        '/userProfile': (context) => UserProfilePage(),
-        '/userDashboard': (context) => UserDashboard(),
-        '/loginpage': (context) => LoginScreen(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/login') {
-          return MaterialPageRoute(builder: (context) => LoginScreen());
-        }
-        // Handle other routes here if needed
-      },
-    );
-  }
+  _MenuState createState() => _MenuState();
 }
 
+class _MenuState extends State<Menu> {
+  late MenuOpportunityBloc _menuOpportunityBloc;
 
-class Menu extends StatelessWidget {
-  const Menu({Key? key}) : super(key: key);
+  @override
+  void initState() {
+    super.initState();
+    _menuOpportunityBloc = BlocProvider.of<MenuOpportunityBloc>(context);
+    _menuOpportunityBloc.add(FetchOpportunity());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 166, 70, 183),
-        title: const Text('Volunteer Opportunities For You'),
+        title: Text('Volunteer Opportunities For You'),
       ),
-      drawer: Drawer(
-        child: Column(
-          children: <Widget>[
-            UserAccountsDrawerHeader(
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 166, 70, 183),
-              ),
-              accountName: Text(
-                'Ankelba',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-              accountEmail: null, // You can remove this line if not needed
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Image.asset(
-                  'assets/images/logo.png', // Replace 'assets/logo.png' with your logo image path
-                  height: 36,
-                  width: 36,
-                ),
-              ),
-            ),
-            ListTile(
-              title: Text('Dashboard'),
-              onTap: () {
-                Navigator.pushNamed(context, '/userDashboard');
-              },
-            ),
-            ListTile(
-              title: Text('Profile'),
-              onTap: () {
-                Navigator.pushNamed(context, '/userProfile');
-              },
-            ),
-            ListTile(
-              title: Text('Logout'),
-              onTap: () {
-                _showLogoutConfirmationDialog(context);
-              },
-            ),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: MenuList(),
+      body: BlocBuilder<MenuOpportunityBloc, MenuOpportunityState>(
+        builder: (context, state) {
+          if (state is MenuOpportunityLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is MenuOpportunityFailure) {
+            return Center(child: Text('Error: ${state.error}'));
+          } else if (state is MenuOpportunitySuccess) {
+            if (state.menuOpportunities.isEmpty) {
+              return Center(child: Text('No opportunities available'));
+            } else {
+              return ListView.builder(
+                itemCount: state.menuOpportunities.length,
+                itemBuilder: (context, index) {
+                  return buildMenuItemWidget(context, state.menuOpportunities[index]);
+                },
+              );
+            }
+          } else {
+            return Center(child: Text('Unknown state'));
+          }
+        },
       ),
     );
   }
 
-
-
-
-void _showLogoutConfirmationDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return LogoutDialog(); // Display the LogoutDialog
-    },
-  );
-}
-
- 
-}
-
-class MenuList extends StatelessWidget {
-  const MenuList({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: 4, // Change this to the number of menu items
-      itemBuilder: (BuildContext context, int index) {
-        return buildMenuItem(context, index);
-      },
-    );
-  }
-}
-
-  Widget buildMenuItem(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        return buildMenuItemWidget(
-          context,
-          'Volunteers',
-          'Description of the volunteers',
-          'assets/images/1587124484014.jpeg',
-          'April 05, 2024 morning',
-        );
-      case 1:
-        return buildMenuItemWidget(
-          context,
-          'Green Organization',
-          'Planting and environment cleaning',
-          'assets/images/volunteer3.jpeg',
-          'April 05, 2024 morning',
-        );
-      case 2:
-        return buildMenuItemWidget(
-          context,
-          'NCA',
-          'Teaching how to code for elementary students',
-          'assets/images/volunteer3.jpeg',
-          'Saturday and Sunday',
-        );
-      case 3:
-        return buildMenuItemWidget(
-          context,
-          'Minilik Hospital',
-          'Providing services for patients',
-          'assets/images/1587124484014.jpeg',
-          'Monday and Friday',
-        );
-      default:
-        return Container();
-    }
-  }
-
-  Widget buildMenuItemWidget(
-    BuildContext context,
-    String title,
-    String description,
-    String imagePath,
-    String date,
-  ) {
+  Widget buildMenuItemWidget(BuildContext context, MenuOpportunity menuOpportunity) {
     return GestureDetector(
       onTap: () {
-        _showDetailsDialog(context, title, description, imagePath, date);
+        _showOpportunityDetails(context, menuOpportunity);
       },
       child: Container(
         height: 150,
@@ -190,14 +77,21 @@ class MenuList extends StatelessWidget {
         child: Row(
           children: <Widget>[
             ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                height: 100.0,
-                width: 100.0,
-              ),
-            ),
+            borderRadius: BorderRadius.circular(8.0),
+            child: menuOpportunity.image != null
+                ? Image.memory(
+                    menuOpportunity.image!,
+                    fit: BoxFit.cover,
+                    height: 100.0,
+                    width: 100.0,
+                  )
+                : Container(
+                    height: 100,
+                    width: 100,
+                    color: Colors.grey,
+                    child: Icon(Icons.image, color: Colors.white),
+                  ),
+        ),
             SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -205,7 +99,7 @@ class MenuList extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    title,
+                    menuOpportunity.title,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -213,24 +107,27 @@ class MenuList extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    description,
+                    menuOpportunity.description.isNotEmpty
+                        ? menuOpportunity.description
+                        : 'No Description',
                     style: TextStyle(fontSize: 16),
                   ),
                 ],
               ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _registerOpportunity(context, menuOpportunity);
+              },
+              child: Text('Register'),
             ),
           ],
         ),
       ),
     );
   }
-  void _showDetailsDialog(
-    BuildContext context,
-    String title,
-    String description,
-    String imagePath,
-    String date,
-  ) {
+
+  void _showOpportunityDetails(BuildContext context, MenuOpportunity menuOpportunity) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -238,19 +135,35 @@ class MenuList extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Image.asset(imagePath),
-              SizedBox(height: 16),
               Text(
-                description,
-                style: TextStyle(fontSize: 18),
+                menuOpportunity.title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Text(date),
+              SizedBox(height: 8),
+              Text(
+                'Description: ${menuOpportunity.description}',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Location: ${menuOpportunity.location}',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Date: ${menuOpportunity.date1}',
+                style: TextStyle(fontSize: 16),
+              ),
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  _registerOpportunity(context, menuOpportunity);
+                  Navigator.of(context).pop(); // Close the dialog
                 },
-                child: Text("Book"),
+                child: Text('Register'),
               ),
             ],
           ),
@@ -258,3 +171,8 @@ class MenuList extends StatelessWidget {
       },
     );
   }
+
+  void _registerOpportunity(BuildContext context, MenuOpportunity menuOpportunity) {
+    _menuOpportunityBloc.add(RegisterOpportunity(menuOpportunity: menuOpportunity));
+  }
+}

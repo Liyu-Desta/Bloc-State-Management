@@ -1,134 +1,87 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:one/Infrastructure/data_providers/userdashboard_api.dart';
+import '../../Domain/models/userDashboard_model.dart';
 
-// void main() {
-//   runApp(DashboardApp());
-// }
-
-// class DashboardApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       home: Dashboard(),
-//     );
-//   }
-// }
+class DashboardApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: UserDashboard(),
+    );
+  }
+}
 
 class UserDashboard extends StatefulWidget {
   @override
-  _DashboardState createState() => _DashboardState();
+  _UserDashboardState createState() => _UserDashboardState();
 }
 
-class _DashboardState extends State<UserDashboard> {
-  List<Opportunity> bookedOpportunities = [
-    Opportunity(
-      title: 'Volunteers',
-      description: 'Description of the volunteers',
-      imagePath: 'assets/cartoon.jpeg',
-      dates: ['April 05, 2024 morning', 'April 10, 2024 afternoon'],
-      selectedDateIndex: 0,
-      showDetails: false,
-    ),
-    // Add more booked opportunities here
-  ];
+class _UserDashboardState extends State<UserDashboard> {
+  late Future<List<UserOpportunity>> _userOpportunities;
+
+  @override
+  void initState() {
+    super.initState();
+    _userOpportunities = UserdashboardApi.fetchUserOpportunities();
+  }
+
+  void _updateOpportunities() {
+    setState(() {
+      _userOpportunities = UserdashboardApi.fetchUserOpportunities();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color.fromARGB(255, 166, 70, 183),
-        title: Center(
-        child: const Text('User Dashboard'),
-    ),
+        title: Center(child: const Text('User Dashboard')),
       ),
-      body: ListView.builder(
-        itemCount: bookedOpportunities.length,
-        itemBuilder: (context, index) {
-          return Column(
-            children: [
-              ListTile(
-                onTap: () {
-                  setState(() {
-                    bookedOpportunities[index].showDetails =
-                        !bookedOpportunities[index].showDetails;
-                  });
-                },
-                leading: Image.asset(
-                  bookedOpportunities[index].imagePath,
-                  fit: BoxFit.cover,
-                  width: 100.0,
-                  height: 100.0,
-                ),
-                title: Text(bookedOpportunities[index].title),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      onPressed: () {
-                        _showOpportunityDetails(context, bookedOpportunities[index]);
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () {
-                        setState(() {
-                          bookedOpportunities.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              if (bookedOpportunities[index].showDetails)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        bookedOpportunities[index].title,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8.0),
-                      Text(bookedOpportunities[index].description),
-                      SizedBox(height: 8.0),
-                      DropdownButtonFormField<String>(
-                        value: bookedOpportunities[index].dates[bookedOpportunities[index].selectedDateIndex],
-                        items: bookedOpportunities[index].dates.map((date) {
-                          return DropdownMenuItem<String>(
-                            value: date,
-                            child: Text(date),
-                          );
-                        }).toList(),
-                        onChanged: (String? newDate) {
-                          setState(() {
-                            if (newDate != null) {
-                              bookedOpportunities[index].selectedDateIndex =
-                                  bookedOpportunities[index].dates.indexOf(newDate);
-                            }
-                          });
-                        },
-                      ),
-                      SizedBox(height: 8.0),
-                      ElevatedButton(
-                        onPressed: () {
-                          _updateOpportunity(bookedOpportunities[index]);
-                          setState(() {bookedOpportunities[index].showDetails = false; // Hide description after update
-                          });
-                        },
-                        child: Text('Update'),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          );
+      body: FutureBuilder<List<UserOpportunity>>(
+        future: _userOpportunities,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No opportunities found.'));
+          } else {
+            return ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                final opportunity = snapshot.data![index];
+                return OpportunityTile(
+                  opportunity: opportunity,
+                  onUpdate: _updateOpportunities,
+                );
+              },
+            );
+          }
         },
       ),
     );
   }
+}
 
-  void _showOpportunityDetails(BuildContext context, Opportunity opportunity) {
+class OpportunityTile extends StatefulWidget {
+  final UserOpportunity opportunity;
+  final VoidCallback onUpdate;
+
+  OpportunityTile({
+    required this.opportunity,
+    required this.onUpdate,
+  });
+
+  @override
+  _OpportunityTileState createState() => _OpportunityTileState();
+}
+
+class _OpportunityTileState extends State<OpportunityTile> {
+  void _showOpportunityDetails(BuildContext context, UserOpportunity opportunity, VoidCallback onUpdate) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -141,34 +94,44 @@ class _DashboardState extends State<UserDashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(opportunity.title, style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(opportunity.opportunityId.title, style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 8.0),
-                    Text(opportunity.description),
+                    Text(opportunity.opportunityId.description),
                     SizedBox(height: 8.0),
-                    DropdownButtonFormField<String>(
-                      value: opportunity.dates[opportunity.selectedDateIndex],
-                      items: opportunity.dates.map((date) {
-                        return DropdownMenuItem<String>(
-                          value: date,
-                          child: Text(date),
-                        );
-                      }).toList(),
-                      onChanged: (String? newDate) {
-                        setState(() {
-                          if (newDate != null) {
-                            opportunity.selectedDateIndex = opportunity.dates.indexOf(newDate);
-                          }
-                        });
+                    DropdownButtonFormField<int>(
+                      value: opportunity.selectedDateIndex,
+                      items: [
+                        DropdownMenuItem<int>(
+                          value: 0,
+                          child: Text(opportunity.dates[0].toIso8601String()),
+                        ),
+                        if (opportunity.opportunityId.date2 != null)
+                          DropdownMenuItem<int>(
+                            value: 1,
+                            child: Text(opportunity.dates[1].toIso8601String()),
+                          ),
+                      ],
+                      onChanged: (int? newIndex) {
+                        if (newIndex != null) {
+                          setState(() {
+                            opportunity.selectedDateIndex = newIndex;
+                            opportunity.selectedDate = opportunity.dates[newIndex];
+                          });
+                        }
                       },
                     ),
+
+                     SizedBox(height: 8.0),
+                    Text('Selected Date: ${opportunity.selectedDate.toIso8601String()}'),
                   ],
                 ),
               ),
               actions: [
                 ElevatedButton(
-                  onPressed: () {
-                    _updateOpportunity(opportunity);
+                  onPressed: () async {
+                    await UserdashboardApi.updateUserOpportunity(opportunity.id, opportunity);
                     Navigator.of(dialogContext).pop();
+                    onUpdate();
                   },
                   child: Text('Update'),
                 ),
@@ -186,30 +149,46 @@ class _DashboardState extends State<UserDashboard> {
     );
   }
 
-  void _updateOpportunity(Opportunity opportunity) {
-  
-    print('Opportunity updated:');
-    print('Title: ${opportunity.title}');
-    print('Description: ${opportunity.description}');
-    print('Selected Date: ${opportunity.dates[opportunity.selectedDateIndex]}');
-    print('--------------------------------------');
+  @override
+  Widget build(BuildContext context) {
+    final opportunity = widget.opportunity;
+    final onUpdate = widget.onUpdate;
+
+    return Column(
+      children: [
+        ListTile(
+          onTap: () {
+            _showOpportunityDetails(context, opportunity, onUpdate);
+          },
+          leading: opportunity.opportunityId.photo.isNotEmpty
+              ? Image.memory(
+                  Uint8List.fromList(base64Decode(opportunity.opportunityId.photo)),
+                  fit: BoxFit.cover,
+                  width: 50.0,
+                  height: 50.0,
+                )
+              : null,
+          title: Text(opportunity.opportunityId.title),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit),
+                onPressed: () {
+                  _showOpportunityDetails(context, opportunity, onUpdate);
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: () async {
+                  await UserdashboardApi.deleteUserOpportunity(opportunity.id);
+                  onUpdate();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
-}
-
-class Opportunity {
-  final String title;
-  final String description;
-  final String imagePath;
-  final List<String> dates;
-  int selectedDateIndex;
-  bool showDetails;
-
-  Opportunity({
-    required this.title,
-    required this.description,
-    required this.imagePath,
-    required this.dates,
-    this.selectedDateIndex = 0,
-    this.showDetails = false,
-  });
 }

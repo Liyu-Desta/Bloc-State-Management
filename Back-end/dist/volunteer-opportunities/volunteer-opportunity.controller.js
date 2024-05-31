@@ -38,8 +38,7 @@ let VolunteerOpportunitiesController = class VolunteerOpportunitiesController {
         return this.opportunitiesService.remove(id);
     }
     //volunteers(users) booking
-    async bookOpportunity(req, opportunityId) {
-        const userId = req.user.userId; // Accessing "userId" from req.user
+    async bookOpportunity(userId, opportunityId) {
         return this.opportunitiesService.bookOpportunity(userId, opportunityId);
     }
     async getUserBookings(req) {
@@ -51,6 +50,9 @@ let VolunteerOpportunitiesController = class VolunteerOpportunitiesController {
     }
     async getOpportunityBookings(opportunityId) {
         return this.opportunitiesService.getOpportunityBookings(opportunityId);
+    }
+    async updateBooking(id, bookingData) {
+        return this.opportunitiesService.updateBooking(id, bookingData);
     }
 };
 __decorate([
@@ -86,13 +88,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], VolunteerOpportunitiesController.prototype, "remove", null);
 __decorate([
-    (0, common_1.Post)(':id/book'),
+    (0, common_1.Post)(':opportunityId'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard) // Open to all authenticated users
     ,
-    __param(0, (0, common_1.Req)()),
-    __param(1, (0, common_1.Param)('id')),
+    __param(0, (0, common_1.Body)('userId')),
+    __param(1, (0, common_1.Param)('opportunityId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], VolunteerOpportunitiesController.prototype, "bookOpportunity", null);
 __decorate([
@@ -122,6 +124,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], VolunteerOpportunitiesController.prototype, "getOpportunityBookings", null);
+__decorate([
+    (0, common_1.Put)('bookings/:bookingId'),
+    __param(0, (0, common_1.Param)('bookingId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], VolunteerOpportunitiesController.prototype, "updateBooking", null);
 VolunteerOpportunitiesController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, common_1.Controller)('volunteer-opportunities'),

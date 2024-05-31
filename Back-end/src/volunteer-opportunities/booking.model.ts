@@ -3,19 +3,23 @@ import { User } from '../users/users.model'; // Adjust path as necessary
 import { VolunteerOpportunity } from './volunteer-opportunity.model';
 
 export interface Booking extends Document {
-  user: mongoose.Types.ObjectId | User;
-  opportunity: mongoose.Types.ObjectId | VolunteerOpportunity;
+  userId: mongoose.Types.ObjectId | User;
+  opportunityId: mongoose.Types.ObjectId | VolunteerOpportunity;
+  selectedDate:String,
   date: String;
+ 
 }
 
 export const BookingSchema = new Schema<Booking>({
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  opportunity: {
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  opportunityId: {
     type: Schema.Types.ObjectId,
     ref: 'VolunteerOpportunity',
     required: true,
   },
   date : {type: String},
+  selectedDate :{type: String },
+  
   // Additional fields as necessary
 });
 

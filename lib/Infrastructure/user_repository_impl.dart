@@ -32,7 +32,7 @@ class UserRepositoryImpl implements UserRepository {
   Future<UserModel?> login(String email, String password) async {
     try {
       final response = await apiService.login(email, password);
-      print(response);
+     
       if (response != null && response['access_token'] != null) {
         final userDetail =
             await apiService.getUserDetail(response['access_token']);

@@ -42,8 +42,8 @@ let VolunteerOpportunitiesService = class VolunteerOpportunitiesService {
         try {
             console.log(`Booking opportunity: ${opportunityId} for user: ${userId}`);
             const newBooking = new this.bookingModel({
-                user: userId,
-                opportunity: opportunityId,
+                userId: userId,
+                opportunityId: opportunityId,
             });
             return await newBooking.save();
         }
@@ -53,10 +53,21 @@ let VolunteerOpportunitiesService = class VolunteerOpportunitiesService {
         }
     }
     async getUserBookings(userId) {
-        return this.bookingModel
-            .find({ user: userId })
-            .populate('opportunity')
-            .exec();
+        try {
+            const bookings = await this.bookingModel
+                .find({ userId: userId })
+                .populate('opportunityId')
+                .exec();
+            if (!bookings) {
+                throw new Error('No bookings found for the user.');
+            }
+            return bookings;
+        }
+        catch (error) {
+            // Handle the error here
+            console.error('Error fetching user bookings:', error);
+            throw error; // Re-throwing the error for further handling
+        }
     }
     async unbookOpportunity(bookingId) {
         return this.bookingModel.findOneAndDelete({ _id: bookingId }).exec();
@@ -65,6 +76,12 @@ let VolunteerOpportunitiesService = class VolunteerOpportunitiesService {
         return this.bookingModel
             .find({ opportunity: opportunityId })
             .populate('user')
+            .exec();
+    }
+    async updateBooking(bookingId, bookingData) {
+        console.log("reached here");
+        return this.bookingModel
+            .findByIdAndUpdate(bookingId, bookingData, { new: true })
             .exec();
     }
 };
