@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:one/Infrastructure/data_providers/userdashboard_api.dart';
+import 'package:one/presentation/widgets/HamburgerMenu.dart';
 import '../../Domain/models/userDashboard_model.dart';
 
 class DashboardApp extends StatelessWidget {
@@ -36,6 +38,7 @@ class _UserDashboardState extends State<UserDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+     
       appBar: AppBar(
         backgroundColor: Color.fromARGB(255, 166, 70, 183),
         title: Center(child: const Text('User Dashboard')),

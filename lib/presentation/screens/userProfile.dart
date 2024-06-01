@@ -1,19 +1,17 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import '../widgets/custom_app_bar.dart'; // Adjust the import path
-import '../widgets/custom_button.dart'; // Adjust the import path
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one/presentation/State/profile_state.dart';
+import 'package:one/presentation/screens/GetStarted.dart';
+import 'package:one/presentation/screens/loginPage.dart';
 
-// Import reusable widgets
-
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: UserProfilePage(),
-  ));
-}
+import '../../Application/bloc/profile_bloc.dart';
+import '../../Domain/models/profile.dart';
+import '../Events/profile_event.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_alert_dialog.dart';
+ // Import your login screen here
 
 class UserProfilePage extends StatefulWidget {
   @override
@@ -21,319 +19,187 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  String _userName = 'Michael';
-  String _email = 'miketherunner@gmail.com';
-  String _phoneNumber = '123-456-7890';
-  String _bio = '';
-  String _location = '';
-  String _interests = '';
-  String _socialMedia = '';
-  Uint8List? _profileImageData; // Storing image bytes directly
-  final ScrollController _scrollController = ScrollController();
-  bool _showSaveButton = false;
+  late ProfileBloc _profileBloc;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _phoneNumberController;
 
   @override
   void initState() {
     super.initState();
-    // Set initial profile image when the page loads
-    _loadInitialImage();
-    _scrollController.addListener(_scrollListener);
+    _profileBloc = BlocProvider.of<ProfileBloc>(context);
+    _profileBloc.add(FetchProfile()); // Fetch the profile data on page load
+
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _phoneNumberController = TextEditingController();
   }
 
-  void _loadInitialImage() async {
-    // Simulate loading the initial image bytes (replace this with your actual logic)
-    final initialImageBytes =
-        await _loadImageBytesFromPath('images/default_profile.jpg');
-    setState(() {
-      _profileImageData = initialImageBytes;
-    });
-  }
-
-  Future<Uint8List> _loadImageBytesFromPath(String path) async {
-    final file = File(path);
-    return await file.readAsBytes();
-  }
-
-  void _updateProfilePicture() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-      setState(() {
-        _profileImageData = bytes;
-      });
-    }
-  }
-
-  void _scrollListener() {
-    if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent) {
-      setState(() {
-        _showSaveButton = true;
-      });
-    } else {
-      setState(() {
-        _showSaveButton = false;
-      });
-    }
+  @override
+  void dispose() {
+    _profileBloc.close();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneNumberController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'My Profile',
-      ),
-      body: CustomScrollView(
-        controller:
-            _scrollController, // Attach scroll controller to CustomScrollView
-        slivers: [
-          SliverPadding(
-            padding: EdgeInsets.only(
-                bottom: 10), // Add bottom padding to the app bar
-            sliver: SliverPadding(
-              padding: EdgeInsets.all(40),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(
-                  [
-                    GestureDetector(
-                      onTap: _updateProfilePicture,
-                      child: Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: _profileImageData != null
-                            ? CircleAvatar(
-                                backgroundImage:
-                                    MemoryImage(_profileImageData!),
-                                radius: 60,
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              ),
-                      ),
-                    ),
+      appBar: CustomAppBar(title: 'My Profile'),
+      body: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) {
+          if (state is ProfileLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is ProfileSuccess) {
+            final List<Profile> profiles = state.profile; // Assuming it returns List<Profile>
+            if (profiles.isEmpty) {
+              return Center(child: Text('No profile data available'));
+            } else {
+              // Display the first profile in the list (assuming there's only one)
+              final Profile profile = profiles.first;
 
-                    SizedBox(height: 20),
-                    _buildProfileField(
-                      labelText: 'User Name',
-                      initialValue: _userName,
-                      onChanged: (value) {
-                        setState(() {
-                          _userName = value;
-                        });
-                      },
+              // Update text controllers with profile data
+              _emailController.text = profile.email;
+              _passwordController.text = profile.password;
+              _phoneNumberController.text = profile.phoneNumber;
+
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: AssetImage('assets/images/logo.png'),
                     ),
+                    SizedBox(height: 20),
+                    _buildEditableProfileField('Email', _emailController),
                     SizedBox(height: 16.0),
-                    _buildProfileField(
-                      labelText: 'Email',
-                      initialValue: _email,
-                      onChanged: (value) {
-                        setState(() {
-                          _email = value;
-                        });
-                      },
-                    ),
+                    _buildEditableProfileField('Password', _passwordController, obscureText: true),
                     SizedBox(height: 16.0),
-                    _buildProfileField(
-                      labelText: 'Phone Number',
-                      initialValue: _phoneNumber,
-                      onChanged: (value) {
-                        setState(() {
-                          _phoneNumber = value;
-                        });
-                      },
-                    ),
+                    _buildEditableProfileField('Phone Number', _phoneNumberController),
                     SizedBox(height: 20),
-                    // Divider between profile fields and additional features
-                    Divider(color: Colors.grey),
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.person,
-                      title: 'Bio',
-                      subtitle: 'Add a short description about yourself',
-                      inputValue: _bio,
-                      onTap: (value) {
-                        _showInputDialog(_bio, (value) {
-                          setState(() {
-                            _bio = value;
-                          });
-                        });
+                    CustomButton(
+                      text: 'Save',
+                      onPressed: () {
+                        _showConfirmationDialog(profile.id);
                       },
                     ),
-
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.location_on,
-                      title: 'Location',
-                      subtitle: 'Add or update your current location',
-                      inputValue: _location,
-                      onTap: (value) {
-                        _showInputDialog(_location, (value) {
-                          setState(() {
-                            _location = value;
-                          });
-                        });
+                    SizedBox(height: 8.0),
+                    CustomButton(
+                      text: 'Delete Account',
+                      onPressed: () {
+                        _showDeleteConfirmationDialog(profile.id);
                       },
                     ),
-
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.tag,
-                      title: 'Interests',
-                      subtitle: 'Add or update your interests or hobbies',
-                      inputValue: _interests,
-                      onTap: (value) {
-                        _showInputDialog(_interests, (value) {
-                          setState(() {
-                            _interests = value;
-                          });
-                        });
-                      },
-                    ),
-
-                    _buildAdditionalProfileFeature(
-                      icon: Icons.link,
-                      title: 'Social Media',
-                      subtitle: 'Connect your social media profiles',
-                      inputValue: _socialMedia,
-                      onTap: (value) {
-                        _showInputDialog(_socialMedia, (value) {
-                          setState(() {
-                            _socialMedia = value;
-                          });
-                        });
-                      },
-                    ),
-
-                    SizedBox(height: 20),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Visibility(
-        visible: _showSaveButton,
-        child: CustomButton(
-          text: 'Save',
-          onPressed: () {
-            // Placeholder action for saving data
-            print('User Information Saved');
-          },
-        ),
+              );
+            }
+          } else if (state is ProfileFailure) {
+            return Center(child: Text('Failed to load profile: ${state.error}'));
+          } else {
+            return Center(child: Text('Unknown state'));
+          }
+        },
       ),
     );
   }
 
-  Widget _buildProfileField({
-    required String labelText,
-    required String initialValue,
-    required ValueChanged<String> onChanged,
-  }) {
+  Widget _buildEditableProfileField(String label, TextEditingController controller, {bool obscureText = false}) {
     return TextFormField(
-      initialValue: initialValue,
+      controller: controller,
+      obscureText: obscureText,
       decoration: InputDecoration(
-        labelText: labelText,
+        labelText: label,
         border: OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.grey[200],
-        suffixIcon: Icon(Icons.edit, color: Colors.purple),
-        labelStyle: TextStyle(
-          color: Colors.purple,
-          fontFamily: 'Roboto',
-        ),
       ),
-      onChanged: onChanged,
     );
   }
 
-  Widget _buildAdditionalProfileFeature({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String inputValue,
-    required ValueChanged<String> onTap,
-  }) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: Colors.purple),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: Colors.purple,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Roboto',
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.grey, // Set subtitle color to grey
-              fontFamily: 'Roboto',
-            ),
-          ),
-          onTap: () {
-            onTap(inputValue); // Pass inputValue to onTap callback
-          },
-        ),
-        if (inputValue.isNotEmpty) // Only show input value if not empty
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.centerLeft,
-            child: Text(
-              inputValue,
-              style: TextStyle(
-                color: Colors.black, // Set input value color to black
-                fontFamily: 'Roboto',
-              ),
-            ),
-          ),
-        Divider(color: Colors.grey),
-      ],
-    );
-  }
-
-  void _showInputDialog(String initialValue, Function(String) onSave) {
-    String inputValue = initialValue;
-
+  void _showConfirmationDialog(String profileId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Enter'),
-          content: TextFormField(
-            initialValue: initialValue, // Set initial value for editing
-            onChanged: (value) => inputValue = value,
-            decoration: InputDecoration(
-              hintText: 'Enter',
-            ),
-          ),
+        return CustomAlertDialog(
+          title: 'Confirm Changes',
+          content: Text('Are you sure you want to save changes?'),
           actions: [
-            ElevatedButton(
+            TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
+                Navigator.of(context).pop();
               },
               child: Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                onSave(inputValue); // Save input value
-                Navigator.pop(context); // Close dialog
+                _updateProfile(profileId);
+                Navigator.of(context).pop();
               },
-              child: Text('Ok'),
+              child: Text('Save'),
             ),
           ],
         );
       },
     );
   }
+
+  void _updateProfile(String profileId) {
+    final updatedProfile = Profile(
+      id: profileId,
+      email: _emailController.text,
+      password: _passwordController.text,
+      phoneNumber: _phoneNumberController.text,
+    );
+    _profileBloc.add(UpdateProfile(id: profileId, updatedProfile: updatedProfile));
+  }
+
+  void _showDeleteConfirmationDialog(String profileId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return CustomAlertDialog(
+        title: 'Confirm Delete Account',
+        content: Text('Are you sure you want to delete your account? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _deleteProfile(profileId, () {
+                GoRouter.of(context).pushReplacement("/login");
+              });
+              setState(() {
+                
+              });
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
+
+ void _deleteProfile(String profileId, VoidCallback callback) {
+  _profileBloc.add(DeleteProfile(id: profileId));
+
+  // Close any dialogs or modals before navigating away
+  Navigator.of(context).pop();
+
+  // Call the callback to navigate to LoginScreen after deletion
+  callback();
+}
+
+
+
+
 }

@@ -6,6 +6,7 @@ import 'package:one/presentation/screens/adminDashboard.dart';
 import 'package:one/presentation/screens/menu.dart';
 import 'package:one/presentation/screens/signup.dart';
 import 'package:one/presentation/screens/userDashboard.dart';
+import 'package:one/presentation/screens/userProfile.dart';
 
 
 class LoginScreen extends StatefulWidget {

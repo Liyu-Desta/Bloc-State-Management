@@ -19,6 +19,7 @@ const roles_guard_1 = require("../auth/roles.guard");
 const has_roles_decorator_1 = require("../auth/has-roles.decorator");
 const role_enum_1 = require("../model/role.enum");
 const users_service_1 = require("./users.service");
+const mongoose = require('mongoose');
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -26,8 +27,9 @@ let UsersController = class UsersController {
     async getAllUsers() {
         return this.usersService.getAllUsers();
     }
-    async getUser(id) {
-        return this.usersService.getUser(id);
+    async getUser(req) {
+        const userId = req.user.userId;
+        return this.usersService.getUser(userId);
     }
     async createUser(userData) {
         return this.usersService.createUser(userData);
@@ -53,11 +55,11 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getAllUsers", null);
 __decorate([
-    (0, common_1.Get)(':id'),
+    (0, common_1.Get)('one'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getUser", null);
 __decorate([
@@ -70,7 +72,6 @@ __decorate([
 ], UsersController.prototype, "createUser", null);
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, has_roles_decorator_1.HasRoles)(role_enum_1.Role.Admin),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -79,7 +80,6 @@ __decorate([
 ], UsersController.prototype, "updateUser", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, has_roles_decorator_1.HasRoles)(role_enum_1.Role.Admin),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

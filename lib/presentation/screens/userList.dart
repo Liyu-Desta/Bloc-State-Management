@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../screens/Profile.dart'; // Import your ProfilePage file
 import 'adminDashboard.dart';
 import '../widgets/HamburgerMenu.dart'; 
 import '../widgets/logout_dialog.dart';
 
-void main() {
-  runApp(MaterialApp(
-    routes: {
-      '/': (context) => UserList(),
-      '/profile': (context) => AdminProfilePage(),
-      '/dashboard': (context) => Dashboard(),
-      '/userList': (context) => UserList(),
-    },
-  ));
-}
+// void main() {
+//   runApp(MaterialApp(
+//     routes: {
+//       '/': (context) => UserList(),
+//       '/profile': (context) => AdminProfilePage(),
+//       '/dashboard': (context) => Dashboard(),
+//       '/userList': (context) => UserList(),
+//     },
+//   ));
+// }
 class UserList extends StatelessWidget {
   final List<String> pages = ['Dashboard', 'User List', 'Profile'];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Add GlobalKey
@@ -44,13 +45,13 @@ class UserList extends StatelessWidget {
       ),
       drawer: HamburgerMenu(
         onDashboardTap: () {
-          Navigator.pushNamed(context, '/dashboard');
+          GoRouter.of(context).push("/dashboard");
         },
         onUserListTap: () {
-          Navigator.pushNamed(context, '/userList');
+           GoRouter.of(context).push("/userList");
         },
         onProfileTap: () {
-          Navigator.pushNamed(context, '/profile');
+           GoRouter.of(context).push("/profile");
         },
       ),
       body: Padding(

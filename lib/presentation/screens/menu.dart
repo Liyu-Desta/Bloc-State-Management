@@ -1,10 +1,12 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:one/presentation/Events/menu_opportunity_event.dart';
 import 'package:one/presentation/State/menu_opportunity_state.dart';
 import 'package:one/Domain/models/menu_opportunity_model.dart';
 import 'package:one/Application/bloc/menu_opportunity_bloc.dart';
+import 'package:one/presentation/widgets/HamburgerMenu.dart';
 
 class Menu extends StatefulWidget {
   const Menu({Key? key}) : super(key: key);
@@ -26,6 +28,17 @@ class _MenuState extends State<Menu> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+       drawer: HamburgerMenu(
+      onUserListTap: () {
+        GoRouter.of(context).push("/menu");
+      },
+      onDashboardTap: () {
+        GoRouter.of(context).push("/userDashboard");
+      },
+      onProfileTap: () {
+        GoRouter.of(context).push("/profile");
+      },
+    ),
       appBar: AppBar(
         title: Text('Volunteer Opportunities For You'),
       ),

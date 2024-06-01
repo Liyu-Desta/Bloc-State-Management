@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../Domain/models/opportunities.dart';
@@ -353,35 +354,33 @@ class _DashboardState extends State<Dashboard> {
   final List<String> pages = ['Dashboard', 'Users list', 'Profile'];
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-        ],
-      ),
-      drawer: HamburgerMenu(
-        onUserListTap: () {
-          // Add navigation for User List
-          Navigator.pushNamed(context, '/userList');
-        },
-        onDashboardTap: () {
-          // Define the action when the dashboard item is tapped
-          Navigator.pop(context); 
-          Navigator.pushNamed(context, '/dashboard');
-        },
-        onProfileTap: () {
-          // Define the action when the profile item is tapped
-          Navigator.pop(context); 
-          Navigator.pushNamed(context, '/profile');
-        },
-      ),
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Dashboard'),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.logout),
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/login');
+          },
+        ),
+      ],
+    ),
+    drawer: HamburgerMenu(
+      onUserListTap: () {
+        GoRouter.of(context).push("/userList");
+      },
+      onDashboardTap: () {
+        GoRouter.of(context).push("/dashboard");
+      },
+      onProfileTap: () {
+        GoRouter.of(context).push("/profile");
+      },
+    ),
+        
+
       body: Column(
         children: [
           Padding(

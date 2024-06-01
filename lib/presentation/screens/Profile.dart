@@ -1,112 +1,131 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import '../widgets/custom_app_bar.dart'; // Adjust the import path
-import '../widgets/custom_button.dart'; // Adjust the import path
-import '../widgets/custom_alert_dialog.dart'; // Adjust the import path
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one/presentation/State/profile_state.dart';
+import 'package:one/presentation/screens/GetStarted.dart';
+import 'package:one/presentation/screens/loginPage.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: AdminProfilePage(),
-  ));
-}
+import '../../Application/bloc/profile_bloc.dart';
+import '../../Domain/models/profile.dart';
+import '../Events/profile_event.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_alert_dialog.dart';
+ // Import your login screen here
 
 class AdminProfilePage extends StatefulWidget {
   @override
-  _AdminProfilePageState createState() => _AdminProfilePageState();
+  _UserProfilePageState createState() => _UserProfilePageState();
 }
 
-class _AdminProfilePageState extends State<AdminProfilePage> {
-  String _adminName = 'Sebastian Goddard';
-  String _email = 'Sabastiangoddard12@gmail.com';
-  String _phoneNumber = '123-456-7890';
-  String _password = '';
-  Uint8List? _profileImageData;
-  bool _showSaveButton = false;
-
-  final ScrollController _scrollController = ScrollController();
+class _UserProfilePageState extends State<AdminProfilePage> {
+  late ProfileBloc _profileBloc;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _phoneNumberController;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialImage();
-    _scrollController.addListener(_scrollListener);
+    _profileBloc = BlocProvider.of<ProfileBloc>(context);
+    _profileBloc.add(FetchProfile()); // Fetch the profile data on page load
+
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _phoneNumberController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _profileBloc.close();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneNumberController.dispose();
     super.dispose();
   }
 
-  void _loadInitialImage() async {
-    final initialImageBytes =
-        await _loadImageBytesFromPath('images/default_profile.jpg');
-    setState(() {
-      _profileImageData = initialImageBytes;
-    });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(title: 'My Profile'),
+      body: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) {
+          if (state is ProfileLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is ProfileSuccess) {
+            final List<Profile> profiles = state.profile; // Assuming it returns List<Profile>
+            if (profiles.isEmpty) {
+              return Center(child: Text('No profile data available'));
+            } else {
+              // Display the first profile in the list (assuming there's only one)
+              final Profile profile = profiles.first;
+
+              // Update text controllers with profile data
+              _emailController.text = profile.email;
+              _passwordController.text = profile.password;
+              _phoneNumberController.text = profile.phoneNumber;
+
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: AssetImage('assets/images/logo.png'),
+                    ),
+                    SizedBox(height: 20),
+                    _buildEditableProfileField('Email', _emailController),
+                    SizedBox(height: 16.0),
+                    _buildEditableProfileField('Password', _passwordController, obscureText: true),
+                    SizedBox(height: 16.0),
+                    _buildEditableProfileField('Phone Number', _phoneNumberController),
+                    SizedBox(height: 20),
+                    CustomButton(
+                      text: 'Save',
+                      onPressed: () {
+                        _showConfirmationDialog(profile.id);
+                      },
+                    ),
+                    SizedBox(height: 8.0),
+                    CustomButton(
+                      text: 'Delete Account',
+                      onPressed: () {
+                        _showDeleteConfirmationDialog(profile.id);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }
+          } else if (state is ProfileFailure) {
+            return Center(child: Text('Failed to load profile: ${state.error}'));
+          } else {
+            return Center(child: Text('Unknown state'));
+          }
+        },
+      ),
+    );
   }
 
-  Future<Uint8List> _loadImageBytesFromPath(String path) async {
-    final file = File(path);
-    return await file.readAsBytes();
+  Widget _buildEditableProfileField(String label, TextEditingController controller, {bool obscureText = false}) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(),
+      ),
+    );
   }
 
-  void _updateProfilePicture() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-      setState(() {
-        _profileImageData = bytes;
-      });
-    }
-  }
-
-  void _changePassword() {
-    _password = '';
-
+  void _showConfirmationDialog(String profileId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return CustomAlertDialog(
-          title: 'Change Password',
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                ),
-                obscureText: true,
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                ),
-                obscureText: true,
-                onChanged: (value) {
-                  setState(() {
-                    _password = value;
-                  });
-                },
-              ),
-              SizedBox(height: 10),
-              Text(
-                _password.length >= 8
-                    ? 'Valid password'
-                    : 'Password must be at least 8 characters long',
-                style: TextStyle(
-                  color: _password.length >= 8 ? Colors.green : Colors.red,
-                ),
-              ),
-            ],
-          ),
+          title: 'Confirm Changes',
+          content: Text('Are you sure you want to save changes?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -115,13 +134,11 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: _password.length >= 8
-                  ? () {
-                      print('Password changed');
-                      Navigator.of(context).pop();
-                    }
-                  : null,
-              child: Text('Change'),
+              onPressed: () {
+                _updateProfile(profileId);
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
             ),
           ],
         );
@@ -129,195 +146,59 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     );
   }
 
-  void _saveAdminInformation() {
-    print('Admin information saved');
+  void _updateProfile(String profileId) {
+    final updatedProfile = Profile(
+      id: profileId,
+      email: _emailController.text,
+      password: _passwordController.text,
+      phoneNumber: _phoneNumberController.text,
+    );
+    _profileBloc.add(UpdateProfile(id: profileId, updatedProfile: updatedProfile));
   }
 
-  void _scrollListener() {
-    if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent) {
-      setState(() {
-        _showSaveButton = true;
-      });
-    } else {
-      setState(() {
-        _showSaveButton = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Admin Profile',
-      ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: <Widget>[
-          SliverPadding(
-            padding: EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  Center(
-                    child: GestureDetector(
-                      onTap: _updateProfilePicture,
-                      child: Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: _profileImageData != null
-                            ? CircleAvatar(
-                                backgroundImage:
-                                    MemoryImage(_profileImageData!),
-                                radius: 60,
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 60),
-                  _buildProfileField(
-                    labelText: 'Admin Name',
-                    initialValue: _adminName,
-                    onChanged: (value) {
-                      setState(() {
-                        _adminName = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16.0),
-                  _buildProfileField(
-                    labelText: 'Email',
-                    initialValue: _email,
-                    onChanged: (value) {
-                      setState(() {
-                        _email = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16.0),
-                  _buildProfileField(
-                    labelText: 'Phone Number',
-                    initialValue: _phoneNumber,
-                    onChanged: (value) {
-                      setState(() {
-                        _phoneNumber = value;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  Divider(color: Colors.grey),
-                  SizedBox(height: 10),
-                  _buildAdditionalFeatures(),
-                  SizedBox(height: 20),
-                ],
-              ),
-            ),
+  void _showDeleteConfirmationDialog(String profileId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return CustomAlertDialog(
+        title: 'Confirm Delete Account',
+        content: Text('Are you sure you want to delete your account? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+               _deleteProfile(profileId, () {
+                GoRouter.of(context).pushReplacement("/login");
+                
+              });
+             setState(() {
+                
+              });
+              
+              },
+            child: Text('Delete'),
           ),
         ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Visibility(
-        visible: _showSaveButton,
-        child: CustomButton(
-          text: 'Save',
-          onPressed: _saveAdminInformation,
-        ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
-  Widget _buildProfileField({
-    required String labelText,
-    required String initialValue,
-    required ValueChanged<String> onChanged,
-  }) {
-    return TextFormField(
-      initialValue: initialValue,
-      decoration: InputDecoration(
-        labelText: labelText,
-        border: OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.grey[200],
-        suffixIcon: Icon(Icons.edit, color: Colors.purple),
-        labelStyle: TextStyle(
-          color: Colors.purple,
-          fontFamily: 'Roboto',
-        ),
-      ),
-      onChanged: onChanged,
-    );
-  }
 
-  Widget _buildAdditionalFeatures() {
-    return Column(
-      children: [
-        _buildAdditionalFeature(
-          icon: Icons.security,
-          title: 'Security Settings',
-          subtitle: 'Manage security preferences',
-          onTap: () {
-            // Implement security settings functionality
-          },
-        ),
-        _buildAdditionalFeature(
-          icon: Icons.settings,
-          title: 'App Settings',
-          subtitle: 'Customize app preferences',
-          onTap: () {
-            // Implement app settings functionality
-          },
-        ),
-        _buildAdditionalFeature(
-          icon: Icons.vpn_key,
-          title: 'Change Password',
-          subtitle: 'Change your login password',
-          onTap: _changePassword,
-        ),
-      ],
-    );
-  }
 
-  Widget _buildAdditionalFeature({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: Colors.purple),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: Colors.purple,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Roboto',
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.grey,
-              fontFamily: 'Roboto',
-            ),
-          ),
-          onTap: onTap,
-        ),
-        Divider(color: Colors.grey),
-      ],
-    );
-  }
+ void _deleteProfile(String profileId, VoidCallback callback) {
+  _profileBloc.add(DeleteProfile(id: profileId));
+    Navigator.of(context).pop();
+  callback();
+   
+}
+
+
+
+
 }
