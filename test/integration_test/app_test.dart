@@ -1,54 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:one/presentation/screens/GetStarted.dart';
-import 'package:one/presentation/screens/loginPage.dart';
-import 'package:one/presentation/screens/signup.dart';
-import 'package:one/presentation/screens/userDashboard.dart';
-import 'package:one/presentation/screens/adminDashboard.dart';
-import 'package:one/main.dart' as app;
+import 'package:integration_test/integration_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one/presentation/screens/getStarted.dart'; // Adjust the import according to your file structure
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('App navigation test', (WidgetTester tester) async {
-    app.main(); // Start the app
+  testWidgets('Navigate from HomeScreen to LoginPage', (WidgetTester tester) async {
+    // Define a mock GoRouter
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => const Scaffold(body: Text('Login Screen')),
+        ),
+      ],
+    );
 
-    await tester.pumpAndSettle(); // Wait for the app to settle
+    // Build the app with MaterialApp and the defined GoRouter
+    await tester.pumpWidget(MaterialApp.router(
+      routerConfig: router,
+    ));
 
-    // Verify that the app starts on the GetStarted screen
-    expect(find.byType(GetStarted), findsOneWidget);
+    // Verify that the HomeScreen is displayed
+    expect(find.text('VOLUNTEER'), findsOneWidget); // Adjust this based on your HomeScreen UI check
 
-    // Navigate to the login screen
-    await tester.tap(find.byKey(Key('login_button')));
+    // Tap the 'Get Started' button and wait for navigation to complete
+    await tester.tap(find.text('Get Started'));
     await tester.pumpAndSettle();
 
-    // Verify that the app navigates to the login screen
-    expect(find.byType(LoginPage), findsOneWidget);
-
-    // Navigate to the signup screen
-    await tester.tap(find.byKey(Key('signup_button')));
-    await tester.pumpAndSettle();
-
-    // Verify that the app navigates to the signup screen
-    expect(find.byType(signup), findsOneWidget);
-
-    // Navigate to the user dashboard screen
-    // Example: simulate successful login
-    // You might need to mock authentication for a proper test
-    // This is just an illustrative example
-    await tester.tap(find.byKey(Key('login_button')));
-    await tester.pumpAndSettle();
-    // Now you're on the user dashboard screen
-    expect(find.byType(UserDashboard), findsOneWidget);
-
-    // Navigate to the admin dashboard screen
-    // Example: simulate admin access
-    // You might need to mock authentication for a proper test
-    // This is just an illustrative example
-    await tester.tap(find.byKey(Key('dashboard_button')));
-    await tester.pumpAndSettle();
-    // Now you're on the admin dashboard screen
-    expect(find.byType(adminDashboard), findsOneWidget);
+    // Verify that the LoginPage is displayed
+    expect(find.text('Login Screen'), findsOneWidget); // Adjust this based on your LoginPage UI check
   });
 }

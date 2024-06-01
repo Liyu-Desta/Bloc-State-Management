@@ -5,7 +5,7 @@ import 'package:one/presentation/screens/menu.dart';
 void main() {
   testWidgets('MenuApp has a title and menu items', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MenuApp());
+    await tester.pumpWidget(const Menu());
 
     // Verify that the title is present.
     expect(find.text('Volunteer Opportunities For You'), findsOneWidget);

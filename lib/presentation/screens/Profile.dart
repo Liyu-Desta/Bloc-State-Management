@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-<<<<<<< HEAD
 import 'package:go_router/go_router.dart';
-=======
->>>>>>> 798e987d6ef92d874c3596daf518a7efa5fe3920
 import 'package:one/presentation/State/profile_state.dart';
 import 'package:one/presentation/screens/GetStarted.dart';
 import 'package:one/presentation/screens/loginPage.dart';
@@ -175,7 +172,6 @@ class _UserProfilePageState extends State<AdminProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
-<<<<<<< HEAD
                _deleteProfile(profileId, () {
                 GoRouter.of(context).pushReplacement("/login");
                 
@@ -185,16 +181,6 @@ class _UserProfilePageState extends State<AdminProfilePage> {
               });
               
               },
-=======
-              _deleteProfile(profileId, () {
-                Navigator.of(context).pop(); // Close delete confirmation dialog
-                Navigator.pushReplacement( // Navigate to LoginScreen
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
-                );
-              });
-            },
->>>>>>> 798e987d6ef92d874c3596daf518a7efa5fe3920
             child: Text('Delete'),
           ),
         ],
@@ -207,18 +193,9 @@ class _UserProfilePageState extends State<AdminProfilePage> {
 
  void _deleteProfile(String profileId, VoidCallback callback) {
   _profileBloc.add(DeleteProfile(id: profileId));
-<<<<<<< HEAD
     Navigator.of(context).pop();
   callback();
    
-=======
-
-  // Close any dialogs or modals before navigating away
-  Navigator.of(context).pop();
-
-  // Call the callback to navigate to LoginScreen after deletion
-  callback();
->>>>>>> 798e987d6ef92d874c3596daf518a7efa5fe3920
 }
 
 

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-<<<<<<< HEAD
 import 'package:go_router/go_router.dart';
-=======
->>>>>>> 798e987d6ef92d874c3596daf518a7efa5fe3920
 import 'package:one/presentation/State/profile_state.dart';
 import 'package:one/presentation/screens/GetStarted.dart';
 import 'package:one/presentation/screens/loginPage.dart';
@@ -176,18 +173,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ElevatedButton(
             onPressed: () {
               _deleteProfile(profileId, () {
-<<<<<<< HEAD
                 GoRouter.of(context).pushReplacement("/login");
               });
               setState(() {
                 
-=======
-                Navigator.of(context).pop(); // Close delete confirmation dialog
-                Navigator.pushReplacement( // Navigate to LoginScreen
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
-                );
->>>>>>> 798e987d6ef92d874c3596daf518a7efa5fe3920
               });
             },
             child: Text('Delete'),

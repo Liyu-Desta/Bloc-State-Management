@@ -50,48 +50,60 @@ class UserdashboardApi {
     final url = '$baseUrl/volunteer-opportunities/my-bookings';
     print('Request URL: $url');
     
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
-    print('Authorization Header: ${'Bearer $token'}');
-    
-    if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body);
-
-      for (var d in data){
-        print('${d["id"]}');
-
+      print('Authorization Header: Bearer $token');
+      
+      if (response.statusCode == 200) {
+        print('Response body: ${response.body}');
+        
+        // Log the raw response body to debug the issue
+        var responseBody = response.body;
+        print('Raw Response Body: $responseBody');
+        
+        List<dynamic> data = jsonDecode(responseBody);
+        print('Decoded JSON data: $data');
+        
+        // Check the structure of each item in the JSON array
+        for (var item in data) {
+          print('JSON item: $item');
+        }
+        
+        List<UserOpportunity> opportunities = data.map((json) => UserOpportunity.fromJson(json)).toList();
+        print('Mapped User Opportunities: $opportunities');
+        return opportunities;
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        throw Exception('Failed to fetch opportunities');
       }
-      
-      // print(data);
-      
-      return data.map((json) => UserOpportunity.fromJson(json)).toList();
-    }
-      
-     else {
-      print('Request failed with status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+    } catch (e) {
+      print('Error: $e');
       throw Exception('Failed to fetch opportunities');
     }
- }
-
+  }
 }
 
-
 class BookModel {
-  final String userId;
-  final String opportunityId;
-  final DateTime? selectedDate;
+  String userId;
+  String opportunityId;
+  DateTime selectedDate;
 
-  const BookModel({required this.userId,required this.opportunityId,required this.selectedDate});
+  BookModel({
+    required this.userId,
+    required this.opportunityId,
+    required this.selectedDate,
+  });
 
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
       'opportunityId': opportunityId,
-      'selectedDate':selectedDate==null?null:selectedDate!.toIso8601String()
+      'selectedDate': selectedDate.toIso8601String(),
     };
   }
 }

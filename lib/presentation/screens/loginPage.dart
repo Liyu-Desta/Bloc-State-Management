@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if(state.user.role == "admin"){
         return Dashboard();
       }else{
-        return UserDashboard();
+        return Menu();
       }
      }else{
       return login(context);

@@ -17,16 +17,18 @@ class UserOpportunity {
 
   factory UserOpportunity.fromJson(Map<String, dynamic> json) {
     return UserOpportunity(
-      id: json['_id'],
-      userId: json['userId'],
+      id: json['_id'] ?? '',
+      userId: json['userId'] ?? '',
       opportunityId: OpportunityId.fromJson(json['opportunityId']),
       selectedDateIndex: 0,
-      selectedDate: DateTime.parse(json['selectedDate']),
+      selectedDate: json['selectedDate'] != null
+          ? DateTime.parse(json['selectedDate'])
+          : DateTime.now(), // Default to now if null
       dates: [
         DateTime.parse(json['opportunityId']['date']),
         json['opportunityId']['date2'] != null
             ? DateTime.parse(json['opportunityId']['date2'])
-            : DateTime.now(),
+            : DateTime.now(), // Default to now if null
       ],
     );
   }
@@ -64,12 +66,12 @@ class OpportunityId {
 
   factory OpportunityId.fromJson(Map<String, dynamic> json) {
     return OpportunityId(
-      id: json['_id'],
-      title: json['title'],
-      description: json['description'],
-      photo: json['photo'],
-      location: json['location'],
-      date: json['date'],
+      id: json['_id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      photo: json['photo'] ?? '',
+      location: json['location'] ?? '',
+      date: json['date'] ?? '',
       date2: json['date2'],
     );
   }
@@ -83,26 +85,6 @@ class OpportunityId {
       'location': location,
       'date': date,
       'date2': date2,
-    };
-  }
-}
-
-class BookModel {
-  String userId;
-  String opportunityId;
-  DateTime selectedDate;
-
-  BookModel({
-    required this.userId,
-    required this.opportunityId,
-    required this.selectedDate,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'userId': userId,
-      'opportunityId': opportunityId,
-      'selectedDate': selectedDate.toIso8601String(),
     };
   }
 }

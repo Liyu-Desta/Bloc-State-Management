@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one/presentation/widgets/custom_button.dart';
 
-
 void main() {
   testWidgets('CustomButton displays text and responds to tap', (WidgetTester tester) async {
     // Define the test key.
@@ -16,7 +15,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: CustomButton(
-            key: testKey,
+            key: testKey, // Pass the testKey as the key parameter
             text: 'Press me',
             onPressed: () {
               buttonPressed = true;
