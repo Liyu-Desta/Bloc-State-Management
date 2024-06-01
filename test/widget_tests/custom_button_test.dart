@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:your_package_name/custom_button.dart';
+import 'package:one/presentation/widgets/custom_button.dart';
+
 
 void main() {
   testWidgets('CustomButton displays text and responds to tap', (WidgetTester tester) async {
